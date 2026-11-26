@@ -277,6 +277,14 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 /* Contrast and focus: retain textual statuses, visible keyboard focus and readable secondary labels. */
 :root{--muted:#a9bbcd}.date-caption{color:#a9bbcd}.qualification-other{color:#b6cadd}.pair-name-link:focus-visible,.sort-head:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 [data-theme="light"] .date-caption,[data-theme="light"] .qualification-other{color:#52697d}
+
+/* Séries séparées des noms, lettres de couleur en quatre teintes. */
+.pair-series{display:inline-block;margin-left:14px;white-space:nowrap;font-size:11px;font-weight:650;letter-spacing:0;color:var(--muted);vertical-align:baseline}
+.series-separator{opacity:.7}.series-suit{font-weight:800}
+.series-suit.suit-P{color:#dce7f3}.series-suit.suit-C{color:#ff858e}.series-suit.suit-K{color:#85c1ff}.series-suit.suit-T{color:#7eddb1}
+[data-theme="light"] .series-suit.suit-P{color:#263747}[data-theme="light"] .series-suit.suit-C{color:#ae253b}[data-theme="light"] .series-suit.suit-K{color:#155a9d}[data-theme="light"] .series-suit.suit-T{color:#176b45}
+@media(max-width:720px){.pair-series{margin-left:9px;font-size:10px}.cdp-table.mobile-compact .pair-series{display:block;margin-left:24px;margin-top:3px}}
+@media print{.pair-series{color:#333!important;margin-left:8px;font-size:7.5pt}.series-suit{color:inherit!important}}
 </style></head>
 <body class="compact-view">
 <header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="themeSwitch" class="secondary" type="button">Thème clair</button><button id="installApp" class="secondary" type="button">Installer</button><button id="manageOpen" class="secondary" type="button">Gestion</button><button id="manageClose" class="secondary" type="button" hidden>Fermer la gestion</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
@@ -307,7 +315,7 @@ import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
-import {pairDisplay,pairDisplayWithSeries,displayCategory} from "./src/presentation.mjs?v=series1";
+import {pairDisplay,pairDisplayWithSeries,orderedPlayers,seriesDisplay,displayCategory} from "./src/presentation.mjs?v=series1";
 import {computeRanking,compareQuotaStages} from "./src/ranking.mjs?v=quota-history1";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=real-s1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
@@ -376,6 +384,27 @@ function td(tr,value,cls){const el=document.createElement("td");el.textContent=v
 const statuses={provisional:"Dans la projection",conditional:"Dans la projection · séances requises",outside:"Hors projection",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
 function projected(p){return p.status==="provisional"||p.status==="conditional";}
 function uncertainQualification(p){return ["center-ambiguous","cutoff-tie","quota-uncertain"].includes(p.status);}
+function appendPairSeries(cell,players){
+ const group=document.createElement("span");group.className="pair-series";
+ const ordered=orderedPlayers(players);
+ ordered.forEach((p,i)=>{
+  if(i){const sep=document.createElement("span");sep.className="series-separator";sep.textContent=" / ";group.append(sep);}
+  const code=document.createElement("span");code.className="series-code";
+  const label=seriesDisplay(p.series),raw=label==="Série inconnue"?"?":p.series;
+  code.title=p.formatted.display+" : "+label;
+  const suit=raw.match(/^([1-4])([PCKT])(H?)$/);
+  if(suit){
+   const number=document.createElement("span"),letter=document.createElement("span");
+   number.textContent=suit[1];letter.className="series-suit suit-"+suit[2];letter.textContent=suit[2];code.append(number,letter);
+   if(suit[3]){const suffix=document.createElement("span");suffix.textContent=suit[3];code.append(suffix);}
+  }else code.textContent=raw;
+  group.append(code);
+ });
+ cell.append(group);
+}
+function previewPairCell(tr,p){
+ const cell=document.createElement("td");cell.className="name";const name=document.createElement("span");name.textContent=pairDisplay(p.players);cell.append(name);appendPairSeries(cell,p.players);tr.append(cell);
+}
 function pairCell(tr,p){
  const cell=document.createElement("td");cell.className="name";
  const selected=projected(p),uncertain=uncertainQualification(p);
@@ -384,7 +413,7 @@ function pairCell(tr,p){
  symbol.textContent=selected?"🏆":uncertain?"?":"";
  symbol.title=selected?(p.status==="conditional"?"Qualifiable selon la projection ; quatre séances ensemble requises.":"Dans le quota projeté ; condition de participation remplie."):uncertain?"Qualification à départager.":"";
  cell.append(symbol);
- const name=document.createElement("button");name.type="button";name.className="pair-name-link";name.textContent=pairDisplayWithSeries(p.players);name.title="Afficher la fiche et le détail de qualification";name.onclick=()=>openPair(p);cell.append(name);tr.append(cell);
+ const name=document.createElement("button");name.type="button";name.className="pair-name-link";name.textContent=pairDisplay(p.players);name.title="Afficher la fiche et le détail de qualification";name.onclick=()=>openPair(p);cell.append(name);appendPairSeries(cell,p.players);tr.append(cell);
 }
 function qualificationCell(tr,p){
  const selected=projected(p),uncertain=uncertainQualification(p);
@@ -488,7 +517,7 @@ function render(){
   const all=provisionalRanking(state);
   $("overview").textContent=all.sessions.length+" / 6 séances collectées · "+all.ranking.length+" paires · "+all.ranking.filter(p=>p.finale!==null).length+" catégorisées";
   const list=all.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
-  for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(p.finale??"unknown");td(tr,p.rank,"numeric");td(tr,pairDisplayWithSeries(p.players),"name");td(tr,p.center||"À identifier");td(tr,p.finale??"—");td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);}
+  for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(p.finale??"unknown");td(tr,p.rank,"numeric");previewPairCell(tr,p);td(tr,p.center||"À identifier");td(tr,p.finale??"—");td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);}
   $("empty").hidden=list.length>0;
   $("quotas").textContent="Classement de travail : "+all.validated+" séance(s) validée(s). Les qualifications sont suspendues tant que les collectes en attente ne sont pas validées.";
   return;
@@ -498,7 +527,7 @@ function render(){
   $("overview").textContent="Aperçu FFB sauvegardé S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
   const list=pp.rows.filter(p=>(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search)))&&(!center||p.center===center));
   $("empty").hidden=list.length>0;
-  {for(const p of list.filter(p=>view==="all"||String(displayCategory(p.players))===view)){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplayWithSeries(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}$("empty").hidden=$("ranking").children.length>0;}
+  {for(const p of list.filter(p=>view==="all"||String(displayCategory(p.players))===view)){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");previewPairCell(tr,p);td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}$("empty").hidden=$("ranking").children.length>0;}
   $("quotas").textContent="Calcul suspendu pour cet aperçu : "+(pp.reasons?.join(" ; ")||"données à valider")+". Le classement enregistré est conservé.";
   return;
  }
