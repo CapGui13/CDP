@@ -1,5 +1,5 @@
 import {matchesSearch,raceStatus,playerDirectory,sideRankings,centerComparison,simulateGlobal,finalPreparation,sportsBulletin} from "./race-tools.mjs";
-import {pairDisplay,playerName} from "./presentation.mjs";
+import {pairDisplay,playerName,seriesDisplay} from "./presentation.mjs";
 import {pairRef,pairIndex} from "./sport-dashboard.mjs";
 import {makeXlsx} from "./xlsx-export.mjs";
 export function createRaceUI({document,storage,getState,openPair,OptionCtor=globalThis.Option,platform=globalThis}){
@@ -22,7 +22,7 @@ export function createRaceUI({document,storage,getState,openPair,OptionCtor=glob
  function comparison(){const {state,result}=refresh();return centers??=centerComparison(state.rows,result);}
  function playerProfile(x){
   const body=show(playerName(x.player).display);
-  body.append(el("p","race-note","Série "+x.player.series+" · "+x.results.length+" séance(s) · "+x.partners.length+" partenaire(s) · moyenne personnelle "+pct(x.average)),el("p","muted","Statistiques personnelles, sans valeur qualificative : seules les performances de la même paire comptent pour la finale."));
+  body.append(el("p","race-note","Série "+seriesDisplay(x.player.series)+" · "+x.results.length+" séance(s) · "+x.partners.length+" partenaire(s) · moyenne personnelle "+pct(x.average)),el("p","muted","Statistiques personnelles, sans valeur qualificative : seules les performances de la même paire comptent pour la finale."));
   section(body,"Parcours personnel",["Séance","Partenaire","Centre de jeu","Score","Fiche de paire"],x.results.map(r=>["S"+r.session,playerName(r.partner).display,r.center,pct(r.score),pairButton(r.pair)]));
   section(body,"Partenaires",["Partenaire","Séances ensemble","Moyenne qualificative actuelle","Situation"],x.partners.map(p=>[playerName(p.partner).display,p.count,pct(p.pair.average),p.pair.status]));
   body.append(button("Retour à la recherche",openPlayers));
@@ -30,7 +30,7 @@ export function createRaceUI({document,storage,getState,openPair,OptionCtor=glob
  function openPlayers(){
   const body=show("Parcours individuels"),search=el("input");search.type="search";search.placeholder="Nom ou prénom du joueur";search.setAttribute?.("aria-label","Rechercher un joueur");
   const list=el("div"),status=el("p","muted");body.append(search,status,list);
-  const update=()=>{const found=players().filter(x=>matchesSearch(playerName(x.player).display,search.value));status.textContent=found.length+" joueur(s) · 100 premiers affichés";list.replaceChildren(table(["Joueur","Série","Séances","Partenaires"],found.slice(0,100).map(x=>[button(playerName(x.player).display,()=>playerProfile(x)),x.player.series,x.results.length,x.partners.length])));};search.oninput=update;update();
+  const update=()=>{const found=players().filter(x=>matchesSearch(playerName(x.player).display,search.value));status.textContent=found.length+" joueur(s) · 100 premiers affichés";list.replaceChildren(table(["Joueur","Série","Séances","Partenaires"],found.slice(0,100).map(x=>[button(playerName(x.player).display,()=>playerProfile(x)),seriesDisplay(x.player.series),x.results.length,x.partners.length])));};search.oninput=update;update();
  }
  function openSide(){
   const body=show("Classements annexes et records"),s=rankings(),{result}=getState();
@@ -39,7 +39,7 @@ export function createRaceUI({document,storage,getState,openPair,OptionCtor=glob
   section(body,"Progression depuis S"+(result.completedSessions[0]??"—"),["Paire","Places gagnées"],s.progression.filter(x=>x.gain>0).slice(0,30).map(x=>[pairButton(x.p),x.gain]));
   section(body,"Records de score de la saison",["Paire","Séance","Centre","Score"],s.records.slice(0,30).map(x=>[pairButton(x.p),"S"+x.session,x.center,pct(x.score)]));
   section(body,"Assiduité : toutes les séances validées",["Paire","Séances","Moyenne"],s.attendance.map(p=>[pairButton(p),p.count,pct(p.average)]));
-  section(body,"Trois meilleures paires comportant un joueur de chaque série",["Série","Paire","Moyenne"],s.series.flatMap(g=>g.pairs.map(p=>[g.series,pairButton(p),pct(p.average)])));
+  section(body,"Trois meilleures paires comportant un joueur de chaque série",["Série","Paire","Moyenne"],s.series.flatMap(g=>g.pairs.map(p=>[seriesDisplay(g.series),pairButton(p),pct(p.average)])));
  }
  function openCenters(){
   const body=show("Comparer les centres"),all=comparison();
