@@ -61,7 +61,7 @@ export function computeRanking(rows, options = {}) {
     if(direct.ties.length)warnings.push("Finale "+finale+" : ex æquo à la frontière directe ; la répartition locale dépend du départage.");
     const entries=centers.map(center=>({center,weight:weights.get(JSON.stringify([finale,center]))||0,quota:minimum}));
     const base=minimum*entries.length;
-    if(base>available){warnings.push("Finale "+finale+" : minimum par centre incompatible avec le plafond.");finals.push({finale,capacity,reserved,direct:direct.selected.map(p=>p.key),directTies:direct.ties.map(p=>p.key),quotas:null});continue;}
+    if(base>available){warnings.push("Finale "+finale+" : minimum par centre incompatible avec le plafond.");for(const p of ranking.filter(p=>p.finale===finale&&p.possible&&p.center&&!p.route))p.status="quota-uncertain";finals.push({finale,capacity,reserved,direct:direct.selected.map(p=>p.key),directTies:direct.ties.map(p=>p.key),quotas:null});continue;}
     const total=entries.reduce((s,e)=>s+e.weight,0);
     const left=available-base;
     if(total){
