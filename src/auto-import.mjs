@@ -33,7 +33,7 @@ export function normalizeFfbRanking(rows,session){
    const name=String(first(p.name,[p.firstName,p.lastName].filter(Boolean).join(" "))||license);
    const series=[p.series,p.serie,p.seriesLabel,p.ranking?.series,p.iv?.series,p.iv?.label,p.classification?.label].map(seriesCode).find(Boolean)||null;
    if(!series)missing.series++;
-   return {license,name,series};
+   return {license,name,series,firstName:typeof (p.firstName??p.first_name)==="string"?(p.firstName??p.first_name):undefined,lastName:typeof (p.lastName??p.last_name)==="string"?(p.lastName??p.last_name):undefined};
   });
   const raw=first(row.sessionScore,row.score,row.percentage,row.percent);
   const score=Number(String(raw??"").replace("%","").trim().replace(",","."));
