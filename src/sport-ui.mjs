@@ -99,8 +99,10 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
   pairCharts(body,p){
    const {state,result}=getState(),series=pairSeries(state.rows,result,p);
    body.append(lineChart("Performances et moyenne",series,[["score","Score","#56b9e8"],["average","Moyenne","#40b890"],["threshold","Seuil local","#c28a32"]],false),lineChart("Évolution du rang",series,[["rank","Général","#56b9e8"],["localRank","Local hors directs","#40b890"]],true));
-   const targets=scoreObjectives(result,p);if(targets.length){const target=el("section","score-targets");target.append(el("h3","","Objectif de score à seuil constant"),el("p","muted","Score identique minimal à réaliser à chaque séance future jouée pour dépasser strictement le seuil local actuel, avec quatre séances ensemble. Ce n’est pas une garantie de qualification."));
-    for(const t of targets)target.append(el("div","target-row",t.sessions+" séance(s) future(s) : "+(t.score===null?"Objectif impossible même à 100 %":pct(t.score))));body.append(target);}
+   const targets=[["Objectif local à seuil constant",scoreObjectives(result,p)],["Objectif de qualification directe à seuil constant",scoreObjectives(result,p,"direct")]].filter(x=>x[1].length);
+   for(const [label,items] of targets){const target=el("section","score-targets");target.append(el("h3","",label),el("p","muted","Score identique minimal à réaliser à chaque séance future jouée pour dépasser strictement le seuil actuel, avec quatre séances ensemble. Ce n’est pas une garantie de qualification."));
+    for(const t of items)target.append(el("div","target-row",t.sessions+" séance(s) future(s) : "+(t.score===null?"Objectif impossible même à 100 %":pct(t.score))));body.append(target);}
+   if(!targets.length)body.append(el("p","muted","Objectif de score indisponible : seuil certain absent, participation impossible ou saison terminée."));
   },
   openShared(){if(shareOpened||typeof location==="undefined")return;shareOpened=true;const key=new URLSearchParams(location.search).get("paire");if(!key)return;const p=index.get(key);if(p)openPair(p);else $("sportNotice").textContent="Ce lien ne correspond pas à une paire unique dans cette publication.";}
  };
