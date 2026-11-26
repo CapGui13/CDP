@@ -58,3 +58,14 @@ test("absence de double qualification et plafonds",()=>{
 test("rejet d'un joueur dupliqué",()=>{
   assert.throws(()=>computeRanking([row(1,"A",50,1),row(1,"B",60,2)],{completedSessions:[1]}),/dupliqué/);
 });
+
+test("égalité de restes : les deux places minimales restent attribuées, seule la suivante est incertaine",()=>{
+ const rows=Array.from({length:8},(_,i)=>row(1,i<4?"A":"B",70-i%4,2*i+1));
+ const r=computeRanking(rows,{completedSessions:[1],capacity:5,directPlaces:0});
+ for(const q of r.finals[1].quotas){
+  assert.equal(q.quota,2);assert.equal(q.quotaMax,3);
+  assert.equal(q.local.length,2);assert.equal(q.extraCandidates.length,1);
+ }
+ assert.equal(r.ranking.filter(p=>p.status==="conditional").length,4);
+ assert.equal(r.ranking.filter(p=>p.status==="quota-uncertain").length,2);
+});
