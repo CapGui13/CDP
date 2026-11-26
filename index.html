@@ -186,7 +186,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><a class="btn" href="https://github.com/CapGui13/CDP/upload/main/data" target="_blank" rel="noopener noreferrer">Publier sur GitHub</a><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
-import {makeFfbClient} from "./src/ffb-browser.mjs?v=clubs1";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=clubs2";
 import {collectClubCenters,discoverClubDirectory,seedClubs} from "./src/club-centers.mjs?v=1";
 import {discoverSessions,collectCommitteePeople,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=2";
