@@ -199,13 +199,29 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 .pair-qualification.trophy-gold{color:#ffcb27}
 .qualification-empty{visibility:hidden}
 .qualification-legend .pair-qualification{margin-right:0}
+
+.pair-name-link{background:none;border:0;border-radius:3px;min-height:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.pair-name-link:hover{background:none;color:#b1e6ff;text-decoration:underline}
+.pair-name-link:focus-visible{outline:2px solid #78c8e9;outline-offset:3px}
+.subrank{display:block;color:#9bb2c7;font-size:10px;font-weight:600;white-space:nowrap;margin-top:3px}
+#pairDialog{width:min(560px,calc(100vw - 24px));max-height:90vh;overflow:auto}
+.pair-details{padding:0 6px 6px}.pair-details .muted{font-size:12px}
+.pair-reason{font-weight:700;font-size:14px;line-height:1.5;margin:12px 0}
+.pair-detail-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0;margin:12px 0;font-size:13px}
+.pair-detail-grid dt,.pair-detail-grid dd{border-bottom:1px solid #30445a;padding:8px 0;margin:0}
+.pair-detail-grid dt{color:#afc3d6;padding-right:10px}.pair-detail-grid dd{text-align:right;font-weight:700}
+.pair-session-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:14px 0}
+.pair-session-grid>div{display:grid;gap:4px;text-align:center;padding:8px 2px;background:#142335;border-radius:6px;font-size:12px}
+.pair-session-grid span{color:#9db0c4}.pair-session-grid strong.score-best{color:#8deac3}
+.pair-detail-note{line-height:1.5}
+@media(max-width:480px){.pair-detail-grid{font-size:12px}.pair-session-grid{grid-template-columns:repeat(3,1fr)}}
 </style></head>
 <body class="compact-view">
 <header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="manageOpen" class="secondary" type="button">Gestion</button><button id="manageClose" class="secondary" type="button" hidden>Fermer la gestion</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
 <main class="shell main-shell">
 <section class="panel rankings-panel"><div class="panel-head"><div><h2>Classement des paires</h2><p class="panel-subtitle">Moyenne des quatre meilleurs pourcentages · Qualification provisoire</p></div><div class="panel-meta"><span id="overview" class="meta-item">Aucune séance importée</span></div></div>
 <p id="publicNotice" class="public-notice muted" hidden role="status"></p><div class="controls"><div class="fields filters-row"><label>Classement<select id="view" class="input"><option value="all">Général</option><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Centre<select id="center" class="input"><option value="">Tous les centres</option></select></label><label>Recherche<input id="search" class="input" type="search" placeholder="Rechercher un joueur ou un n° FFB"></label></div></div>
-<div class="qualification-legend"><span><span class="pair-qualification trophy-gold">🏆</span> Qualifiable selon la projection actuelle</span><span><span class="pair-qualification qualification-pending">?</span> Cas à départager</span><span class="muted">Quatre séances ensemble requises ; quotas évolutifs. Projection non officielle.</span></div><div class="table-zone"><div class="table-wrap"><table class="cdp-table"><thead><tr><th>Rang</th><th>Paire</th><th>Centre</th><th>Finale</th><th>Jouées</th><th>Moyenne</th><th>Qualification</th><th>S1<span class="date-caption">25/11</span></th><th>S2<span class="date-caption">27/01</span></th><th>S3<span class="date-caption">24/02</span></th><th>S4<span class="date-caption">24/03</span></th><th>S5<span class="date-caption">14/04</span></th><th>S6<span class="date-caption">05/05</span></th></tr></thead><tbody id="ranking"></tbody></table></div><div class="empty-state" id="empty"><strong>Aucun résultat à afficher</strong><span id="emptyHint">Connecte-toi à la FFB pour récupérer les résultats.</span></div><div class="table-foot"><span>Les scores retenus sont en vert menthe.</span><span class="category-legend"><span><i class="cat-swatch cat1"></i>Cat. 1 · 2C ou +</span><span><i class="cat-swatch cat2"></i>Cat. 2</span><span><i class="cat-swatch cat-unknown"></i>Catégorie inconnue</span></span></div></div>
+<div class="qualification-legend"><span><span class="pair-qualification trophy-gold">🏆</span> Qualifiable selon la projection actuelle</span><span><span class="pair-qualification qualification-pending">?</span> Cas à départager</span><span class="muted">Quatre séances ensemble requises ; quotas évolutifs. Projection non officielle.</span><span class="muted">Clique sur une paire pour voir sa fiche.</span></div><div class="table-zone"><div class="table-wrap"><table class="cdp-table"><thead><tr><th>Rang général<span class="date-caption">Cat. / Centre</span></th><th>Paire</th><th>Centre</th><th>Finale</th><th>Jouées</th><th>Moyenne</th><th>Qualification</th><th>S1<span class="date-caption">25/11</span></th><th>S2<span class="date-caption">27/01</span></th><th>S3<span class="date-caption">24/02</span></th><th>S4<span class="date-caption">24/03</span></th><th>S5<span class="date-caption">14/04</span></th><th>S6<span class="date-caption">05/05</span></th></tr></thead><tbody id="ranking"></tbody></table></div><div class="empty-state" id="empty"><strong>Aucun résultat à afficher</strong><span id="emptyHint">Connecte-toi à la FFB pour récupérer les résultats.</span></div><div class="table-foot"><span>Les scores retenus sont en vert menthe.</span><span class="category-legend"><span><i class="cat-swatch cat1"></i>Cat. 1 · 2C ou +</span><span><i class="cat-swatch cat2"></i>Cat. 2</span><span><i class="cat-swatch cat-unknown"></i>Catégorie inconnue</span></span></div></div>
 <div class="quota-area"><details><summary>Quotas prévisionnels par centre et évolution</summary><div id="quotas"></div></details></div></section>
 <section id="syncPanel" class="panel" hidden><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
 <div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
@@ -215,8 +231,9 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details>
 </div></section>
 <section id="storagePanel" class="panel" hidden><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><button id="publishDirect" class="primary" type="button">Publier le classement</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
-</main><dialog id="manageDialog"><div class="modal-head"><h2>Activer la gestion</h2><button id="manageCancel" class="modal-close" type="button" aria-label="Fermer">×</button></div><form id="manageForm" class="ffb-login-form"><label>Token GitHub<input id="githubToken" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Token limité au dépôt CapGui13/CDP, permission Contents : lecture et écriture. Il reste en mémoire uniquement jusqu’à la fermeture de la gestion ou de la page.</p><div class="actions"><button id="manageSubmit" class="primary" type="submit">Activer</button></div></form><p id="manageStatus" class="muted" role="status"></p></dialog>
+</main><dialog id="pairDialog" aria-labelledby="pairTitle"><div class="modal-head"><h2 id="pairTitle">Fiche de la paire</h2><button id="pairClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="pairDetails" class="pair-details"></div></dialog><dialog id="manageDialog"><div class="modal-head"><h2>Activer la gestion</h2><button id="manageCancel" class="modal-close" type="button" aria-label="Fermer">×</button></div><form id="manageForm" class="ffb-login-form"><label>Token GitHub<input id="githubToken" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Token limité au dépôt CapGui13/CDP, permission Contents : lecture et écriture. Il reste en mémoire uniquement jusqu’à la fermeture de la gestion ou de la page.</p><div class="actions"><button id="manageSubmit" class="primary" type="submit">Activer</button></div></form><p id="manageStatus" class="muted" role="status"></p></dialog>
 <script type="module">
+import {qualificationDetails,qualificationReason} from "./src/qualification-details.mjs?v=1";
 import {connectPublisher} from "./src/github-publish.mjs?v=1";
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
 import {syncSession} from "./src/session-sync.mjs?v=real-s1";
@@ -298,7 +315,7 @@ function pairCell(tr,p){
  symbol.textContent=selected?"🏆":uncertain?"?":"";
  symbol.title=selected?(p.status==="conditional"?"Qualifiable selon la projection ; quatre séances ensemble requises.":"Dans le quota projeté ; condition de participation remplie."):uncertain?"Qualification à départager.":"";
  cell.append(symbol);
- const name=document.createElement("span");name.textContent=pairDisplay(p.players);cell.append(name);tr.append(cell);
+ const name=document.createElement("button");name.type="button";name.className="pair-name-link";name.textContent=pairDisplay(p.players);name.title="Afficher la fiche et le détail de qualification";name.onclick=()=>openPair(p);cell.append(name);tr.append(cell);
 }
 function qualificationCell(tr,p){
  const selected=projected(p),uncertain=uncertainQualification(p);
@@ -309,6 +326,35 @@ function qualificationCell(tr,p){
  cell.append(label);tr.append(cell);
 }
 
+function openPair(p){
+ const d=qualificationDetails(result,p);
+ $("pairTitle").textContent=pairDisplay(p.players);
+ const body=$("pairDetails");body.replaceChildren();
+ const sub=document.createElement("p");sub.className="muted";sub.textContent=(p.center||"Centre à déterminer")+" · Finale "+p.finale;body.append(sub);
+ const reason=document.createElement("p");reason.className="pair-reason "+(projected(p)?"qualification-yes":uncertainQualification(p)?"qualification-pending":"qualification-other");reason.textContent=(projected(p)?"🏆 ":"")+qualificationReason(p,d);body.append(reason);
+ const list=document.createElement("dl");list.className="pair-detail-grid";
+ const field=(label,value)=>{const a=document.createElement("dt"),b=document.createElement("dd");a.textContent=label;b.textContent=value;list.append(a,b);};
+ const rank=(n,total)=>n===null?"—":n+" / "+total;
+ const percent=n=>n.toFixed(2).replace(".",",")+" %";
+ field("Rang général",rank(d.generalRank,d.generalTotal));
+ field("Rang dans la catégorie",rank(d.categoryRank,d.categoryTotal));
+ field("Rang dans le centre (catégorie)",rank(d.centerRank,d.centerTotal));
+ field("Rang local hors directs et paires non éligibles",p.route==="direct"?"Qualification directe":rank(d.localRank,d.localTotal));
+ field("Quota local prévisionnel",d.quotaMin===null?"À déterminer":d.quotaMin===d.quotaMax?String(d.quotaMin):d.quotaMin+" à "+d.quotaMax);
+ field("Séances jouées ensemble",p.count+" / 6 · "+d.missing+" restante(s) pour atteindre 4");
+ field("Moyenne actuelle",percent(p.average));
+ if(d.boundary!==null&&p.route!=="direct"){
+  field("Seuil qualificatif local actuel",percent(d.boundary));
+  field("Écart au seuil",(d.gap>0?"+":"")+d.gap.toFixed(2).replace(".",",")+" point(s)");
+ }
+ body.append(list);
+ const scores=document.createElement("div");scores.className="pair-session-grid";
+ for(let n=1;n<=6;n++){const item=document.createElement("div"),label=document.createElement("span"),score=document.createElement("strong");label.textContent="S"+n;const r=p.results.find(x=>x.session===n);score.textContent=r?percent(r.score):"—";if(r&&p.retained.includes(n))score.className="score-best";item.append(label,score);scores.append(item);}
+ body.append(scores);
+ const foot=document.createElement("p");foot.className="muted pair-detail-note";foot.textContent="Projection non officielle à partir des séances validées. Les rangs sont calculés avant tout filtre ; les quotas et seuils peuvent évoluer. Les scores retenus sont les quatre meilleurs (ou tous ceux déjà joués).";body.append(foot);
+ $("pairDialog").showModal();
+}
+$("pairClose").onclick=()=>$("pairDialog").close();
 function render(){
  const publicView=!publisher;
  $("syncPanel").hidden=publicView;$("storagePanel").hidden=publicView;$("manageOpen").hidden=!publicView;$("manageClose").hidden=publicView;
@@ -344,7 +390,7 @@ function render(){
   return;
  }
  for(const p of rows){
- const tr=document.createElement("tr");tr.className="player-row category-"+p.finale+" q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);tr.append(rankCell);pairCell(tr,p);td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");qualificationCell(tr,p);for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
+ const tr=document.createElement("tr");tr.className="player-row category-"+p.finale+" q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);const d=qualificationDetails(result,p);const sub=document.createElement("span");sub.className="subrank";sub.textContent="Cat. "+d.categoryRank+" · C. "+(d.centerRank??"—");sub.title="Rang dans la catégorie / rang dans le centre au sein de la catégorie";rankCell.append(sub);tr.append(rankCell);pairCell(tr,p);td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");qualificationCell(tr,p);for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
  }
  $("quotas").replaceChildren();
  if(!result.completedSessions.length){$("quotas").textContent="Aucune séance validée : pas encore de projection de quotas.";return;}
