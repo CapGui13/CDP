@@ -31,7 +31,7 @@ function boot(storage,client){
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
  const values=imports.flatMap(m=>m[1].split(",").map(x=>modules[m[2]][x.trim()]));
- new Function("document","Option","localStorage","fetch",...names,script.replace(/^import .*$/gm,""))(document,Option,localStorage,async()=>({ok:false}),...values);
+ new Function("document","Option","localStorage","fetch","AbortController","setTimeout","clearTimeout",...names,script.replace(/^import .*$/gm,""))(document,Option,localStorage,async()=>({ok:false}),AbortController,setTimeout,clearTimeout,...values);
  return elements;
 }
 test("interface : sauvegarde existante, connexion, centres, séries, classement puis rechargement",async()=>{
