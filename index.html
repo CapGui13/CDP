@@ -179,22 +179,25 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel"><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
 <div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
 <dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog>
-<h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="query" class="primary">Actualiser depuis la FFB</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" class="notice" role="status"></p>
-<details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><span id="arrays" class="muted"></span></div>
+<h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" class="notice" role="status"></p>
+<details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><button class="secondary" id="schemaExport">Exporter le schéma (sans données personnelles)</button><span id="arrays" class="muted"></span></div>
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details>
 </div></section>
-<section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><a class="btn" href="https://github.com/CapGui13/CDP/upload/main/data" target="_blank" rel="noopener noreferrer">Publier sur GitHub</a><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
-import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync3";
-import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=iv2";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync4";
+import {discoverSessions,collectCommitteePeople,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
+import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=1";
+import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=sync4";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=iv2";
 import {computeRanking} from "./src/ranking.mjs?v=iv2";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
-let pendingPreview=null;
+let pendingPreview=null,publicMode=false;
+const discovered=new Map([[1,364548]]);
 let api=null,busy=false,state={completedSessions:[],rows:[],previews:{},savedAt:null},result=null;
 const storage="cdp-2027-normalized-v1";
 const mapping={center:"",score:"",license1:"",license2:"",series1:"",series2:"",name1:"",name2:"",seriesValues:{}};
@@ -206,7 +209,8 @@ function config(){
  return {session,id,page,size,route:$("route").value};
 }
 function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
-function run(fn){return async()=>{if(busy)return;busy=true;$("query").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;$("query").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
+function startLocal(){if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;publicMode=false;render();}}
+function run(fn){return async()=>{if(busy)return;busy=true;$("query").disabled=true;$("syncAll").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=JSON.parse($("raw").value);const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload){$("raw").value=JSON.stringify(payload,null,2);inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
@@ -215,7 +219,7 @@ function saveSnapshot(next,preview=null){
  const parsed=readSnapshot(next),checked=validate(parsed);
  try{localStorage.setItem(storage,JSON.stringify(parsed));}
  catch(e){throw Error("Sauvegarde locale impossible : espace insuffisant ou stockage bloqué. Les anciennes données sont conservées.");}
- state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;render();
+ publicMode=false;state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;render();
 }
 function commit(next){saveSnapshot(withValidated(state,next));}
 function storePreview(preview){const update=withPreview(state,preview);saveSnapshot(update.snapshot,preview);return update.kept;}
@@ -224,7 +228,7 @@ function updateArchive(){
  const entries=Object.values(state.previews??{}).sort((a,b)=>a.session-b.session);
  for(const p of entries)select.add(new Option("S"+p.session+" · "+p.rows.length+" paires collectées (aperçu)",String(p.session)));
  select.value=pendingPreview?String(pendingPreview.session):"";
- $("savedInfo").textContent=state.savedAt?"Sauvegarde locale : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · "+state.completedSessions.length+" séance(s) validée(s) · "+entries.length+" aperçu(s)":"Aucune collecte sauvegardée.";
+ $("savedInfo").textContent=publicMode?"Classement public · lecture seule · "+(state.savedAt?new Date(state.savedAt).toLocaleString("fr-FR"):"aucune publication") : state.savedAt?"Sauvegarde locale : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · "+state.completedSessions.length+" séance(s) validée(s) · "+entries.length+" aperçu(s)":"Aucune collecte sauvegardée.";
 }
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
 const statuses={provisional:"Dans le quota",conditional:"Qualifiable sous condition",outside:"Hors quota",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
@@ -260,10 +264,22 @@ $("openLogin").onclick=()=>{$("loginStatus").textContent="";$("loginDialog").sho
 $("closeLogin").onclick=()=>{if(!busy)$("loginDialog").close();};
 $("loginForm").onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;$("connect").disabled=true;$("loginStatus").textContent="Connexion…";api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:FFB_CLIENT_CONFIG});$("auth").textContent="Connecté";$("loginDialog").close();message("Connexion FFB réussie.");}catch(e){$("loginStatus").textContent=e.message||"Échec de connexion";}finally{$("password").value="";$("connect").disabled=false;busy=false;}};
 $("disconnect").onclick=()=>{if(busy)return;api=null;$("auth").textContent="Non connecté";$("password").value="";message("Session locale fermée.");};
-$("session").onchange=()=>{$("sessionId").value=$("session").value==="1"?"364548":"";};
-$("sessions").onclick=run(async()=>{const p=await requireApi().sessions(12,Number($("page").value),Number($("pageSize").value));showRaw(p);message("Liste des séances reçue.");});
-$("query").onclick=run(async()=>{
- const c=config(),client=requireApi();
+$("session").onchange=()=>{$("sessionId").value=discovered.get(Number($("session").value))??"";};
+async function refreshSessions(client){
+ const size=80,first=await client.sessions(12,1,size);
+ const pages=[first],total=listTotal(first);
+ if(total!==null)for(let page=2;page<=Math.min(25,Math.ceil(total/size));page++)pages.push(await client.sessions(12,page,size));
+ const collected=new Map([[1,364548]]),conflicts=new Set();
+ for(const payload of pages){const found=discoverSessions(payload);for(const date of found.conflicts)conflicts.add(date);for(const item of found.sessions){if(collected.has(item.number)&&collected.get(item.number)!==item.ffbId)conflicts.add(item.date);else collected.set(item.number,item.ffbId);}}
+ const dates=["2026-11-25","2027-01-27","2027-02-24","2027-03-24","2027-04-14","2027-05-05"];
+ for(const [number,id] of collected)if(!conflicts.has(dates[number-1]))discovered.set(number,id);
+ for(const date of conflicts)discovered.delete(dates.indexOf(date)+1);
+ $("sessionId").value=discovered.get(Number($("session").value))??"";
+ if(conflicts.size)message("Séances ambiguës : "+[...conflicts].join(", "),true);
+ return first;
+}
+$("sessions").onclick=run(async()=>{const p=await refreshSessions(requireApi());showRaw(p);message(discovered.size+" séance(s) officielle(s) identifiée(s), voir le sélecteur.");});
+async function syncOne(c,client){
  if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");
  message("FFB : récupération du classement complet S"+c.session+"…");
  let payload;
@@ -272,12 +288,13 @@ $("query").onclick=run(async()=>{
  let {rows:raw,total}=readRanking(payload);
  if(total!==null&&raw.length<total){
   const paths=arrayPaths(payload).filter(path=>at(payload,path)===raw);
-  const totalPath=["total","totalCount","totalItems","data.total","pagination.total","meta.total"].find(p=>Number(at(payload,p))===total);
+  const totalPath=["total","totalCount","totalItems","data.total","pagination.total_items","pagination.totalItems","pagination.total","meta.total"].find(p=>Number(at(payload,p))===total);
   if(paths.length!==1||!totalPath)throw Error("Pagination détectée mais structure non reconnue. Exporte la réponse JSON.");
   message("FFB : récupération des "+total+" paires…");
   raw=await collectPages((p,size)=>client.sessionRanking(c.id,p,size,c.route),{listPath:paths[0],totalPath,pageSize:c.size});
  }
  const normalized=normalizeFfbRanking(raw,c.session);
+ startLocal();
  const rows=normalized.rows;
  const known=new Map();
  for(const previous of [...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)])for(const p of previous.players)if(p.series)known.set(p.license,p.series);
@@ -287,8 +304,19 @@ $("query").onclick=run(async()=>{
  $("view").value="all";$("center").value="";
  // Sauvegarder d'abord les résultats réels, puis les enrichir par petits lots.
  if(reasonsFor().length)saveProgress();
- const todo=rows.flatMap(r=>r.players).filter(p=>!p.series&&p.personId);
  let lookupNote="";
+ if(rows.some(r=>r.players.some(p=>!p.series))){
+  try{
+   const current=await client.currentSeason();
+   if(Number(current?.id)!==38)throw Error("Saison fédérale non confirmée.");
+   await collectCommitteePeople(client,rows,({page,count,remaining})=>{
+    if(page%5===0||remaining===0)saveProgress();
+    message("FFB · recherche groupée : "+count+" séries identifiées, "+remaining+" joueurs encore à identifier (page "+page+").");
+   });
+   saveProgress();
+  }catch(e){lookupNote="Recherche groupée : "+(e.message||"échec");}
+ }
+ const todo=rows.flatMap(r=>r.players).filter(p=>!p.series&&p.personId);
  if(todo.length){
    try{
      const season=await client.currentSeason();
@@ -321,15 +349,27 @@ $("query").onclick=run(async()=>{
  }
  commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...normalized.rows]});
  message(raw.length+" paires importées et sauvegardées pour S"+c.session+" ; classement recalculé.");
-});
+}
+$("query").onclick=run(async()=>{const client=requireApi();try{await refreshSessions(client);}catch(e){message("Découverte FFB indisponible : "+e.message);}await syncOne(config(),client);});
+$("syncAll").onclick=run(async()=>{const client=requireApi();try{await refreshSessions(client);}catch(e){message("Découverte FFB indisponible : "+e.message);}const failures=[];for(const [session,id] of [...discovered].sort((a,b)=>a[0]-b[0])){try{await syncOne({session,id,size:80,route:"results"},client);}catch(e){failures.push("S"+session+" : "+e.message);}}message("Actualisation terminée : "+state.completedSessions.length+" séances validées, "+Object.keys(state.previews).length+" aperçus sauvegardés."+(failures.length?" Erreurs : "+failures.join(" ; "):""),!!failures.length);});
 $("inspect").onclick=run(async()=>{inspect();message("Structure analysée.");});
+$("schemaExport").onclick=run(async()=>{download("cdp-schema-ffb.json",schemaSummary(JSON.parse($("raw").value)));message("Schéma sans valeurs exporté.");});
 $("exportRaw").onclick=run(async()=>{download("cdp-query.json",JSON.parse($("raw").value));message("Export JSON lancé.");});
 $("preview").onclick=run(async()=>{const c=config(),raw=at(JSON.parse($("raw").value),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
 $("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");});
 $("save").onclick=()=>download("cdp-2027-seances.json",state);
+$("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length&&!Object.keys(state.previews).length)throw Error("Aucun résultat collecté.");download("published.json",publicSnapshot(state));message("Fichier public préparé. Dépose-le dans data/published.json sur GitHub pour rendre le classement consultable.");});
 $("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
 for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
 $("savedView").onchange=()=>{pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
 try{const cached=localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
 render();
+if(!state.rows.length&&!Object.keys(state.previews).length){
+ fetch("./data/published.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Publication indisponible");return r.json();}).then(data=>{
+  if(busy||state.rows.length||Object.keys(state.previews).length)return;
+  const published=readPublicSnapshot(data);
+  if(!published.rows.length&&!Object.keys(published.previews).length)return;
+  result=validate(published);state=published;publicMode=true;pendingPreview=state.rows.length?null:latestPreview(state);render();
+ }).catch(()=>{});
+}
 </script></body></html>
