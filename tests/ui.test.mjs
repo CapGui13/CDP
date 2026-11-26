@@ -87,7 +87,7 @@ test("page unique : cache privé inaccessible à l'affichage avant token, retour
 
 
 test("coupe avant les noms : projection directe ou locale, égalités et hors projection",()=>{
- const source=html.slice(html.indexOf("const statuses="),html.indexOf("function render(){"));
+ const source=html.slice(html.indexOf("const statuses="),html.indexOf("function openPair(p){"));
  const cells=new Function("document","pairDisplay",source+"\nreturn {pairCell,qualificationCell};")({createElement:()=>element()},players=>players.map(p=>p.name).join(" / "));
  for(const [status,route,expected,label] of [["conditional","direct","🏆","Directe"],["provisional","center","🏆","Par centre"],["quota-uncertain",null,"?","Quota incertain"],["cutoff-tie","center","?","Ex æquo"],["center-ambiguous",null,"?","Centre ambigu"],["outside",null,"","Hors projection"],["impossible",null,"","Non qualifiable"]]){
   const tr=element(),p={status,route,count:1,players:[{name:"A"},{name:"B"}]};
