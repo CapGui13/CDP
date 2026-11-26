@@ -175,11 +175,13 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Résultats normalisés conservés dans le navigateur</p></div></div><div class="panel-inner"><div class="actions"><button id="save" class="secondary">Exporter les séances</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
-import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-auth2";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync3";
+import {readRanking,normalizeFfbRanking} from "./src/auto-import.mjs";
 import {computeRanking} from "./src/ranking.mjs";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
+let pendingPreview=null;
 let api=null,busy=false,state={completedSessions:[],rows:[]},result=null;
 const storage="cdp-2027-normalized-v1";
 const mapping={center:"",score:"",license1:"",license2:"",series1:"",series2:"",name1:"",name2:"",seriesValues:{}};
@@ -191,12 +193,12 @@ function config(){
  return {session,id,page,size,route:$("route").value};
 }
 function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
-function run(fn){return async()=>{if(busy)return;busy=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;}};}
+function run(fn){return async()=>{if(busy)return;busy=true;$("query").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;$("query").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=JSON.parse($("raw").value);const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload){$("raw").value=JSON.stringify(payload,null,2);inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
 function validate(next){if(!Array.isArray(next.rows)||!Array.isArray(next.completedSessions))throw Error("Sauvegarde invalide");return computeRanking(next.rows,{completedSessions:next.completedSessions});}
-function commit(next){const checked=validate(next);localStorage.setItem(storage,JSON.stringify(next));state=next;result=checked;render();}
+function commit(next){const checked=validate(next);localStorage.setItem(storage,JSON.stringify(next));state=next;result=checked;pendingPreview=null;render();}
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
 const statuses={provisional:"Dans le quota",conditional:"Qualifiable sous condition",outside:"Hors quota",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
 function render(){
@@ -209,6 +211,15 @@ function render(){
  const view=$("view").value,center=$("center").value,search=$("search").value.toLocaleLowerCase("fr");
  const rows=result.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
  $("ranking").replaceChildren();$("empty").hidden=rows.length>0;
+ if(pendingPreview){
+  const pp=pendingPreview;
+  $("overview").textContent="Aperçu FFB S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
+  const list=pp.rows.filter(p=>(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search)))&&(!center||p.center===center));
+  $("empty").hidden=list.length>0;
+  if(view==="all"){for(const p of list){const tr=document.createElement("tr");tr.className="player-row";td(tr,p.ffbRank??"—","numeric");td(tr,p.players.map(x=>x.name).join(" / "),"name");td(tr,p.center||"À identifier");td(tr,"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}}else{$("empty").hidden=false;}
+  $("quotas").textContent="Calcul suspendu : l'aperçu ne contient pas toutes les données nécessaires. Le classement enregistré est conservé.";
+  return;
+ }
  for(const p of rows){
  const tr=document.createElement("tr");tr.className="player-row q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);tr.append(rankCell);td(tr,p.players.map(x=>x.name||x.license).join(" / "),"name");td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,(statuses[p.status]||p.status)+(p.route?" · "+(p.route==="direct"?"directe":"centre"):""),p.status==="provisional"?"qualified":p.status==="conditional"?"conditional":"");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
  }
@@ -223,7 +234,34 @@ $("loginForm").onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;$(
 $("disconnect").onclick=()=>{if(busy)return;api=null;$("auth").textContent="Non connecté";$("password").value="";message("Session locale fermée.");};
 $("session").onchange=()=>{$("sessionId").value=$("session").value==="1"?"364548":"";};
 $("sessions").onclick=run(async()=>{const p=await requireApi().sessions(12,Number($("page").value),Number($("pageSize").value));showRaw(p);message("Liste des séances reçue.");});
-$("query").onclick=run(async()=>{const c=config();showRaw(await requireApi().sessionRanking(c.id,c.page,c.size,c.route));message("Réponse de la page "+c.page+" reçue.");});
+$("query").onclick=run(async()=>{
+ const c=config(),client=requireApi();
+ if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");
+ message("FFB : récupération du classement complet S"+c.session+"…");
+ let payload;
+ try{payload=await client.fullSessionRanking(c.id);}catch(e){message("Query directe refusée, tentative paginée…");payload=await client.sessionRanking(c.id,1,c.size,c.route);}
+ showRaw(payload);
+ let {rows:raw,total}=readRanking(payload);
+ if(total!==null&&raw.length<total){
+  const paths=arrayPaths(payload).filter(path=>at(payload,path)===raw);
+  const totalPath=["total","totalCount","totalItems","data.total","pagination.total","meta.total"].find(p=>Number(at(payload,p))===total);
+  if(paths.length!==1||!totalPath)throw Error("Pagination détectée mais structure non reconnue. Exporte la réponse JSON.");
+  message("FFB : récupération des "+total+" paires…");
+  raw=await collectPages((p,size)=>client.sessionRanking(c.id,p,size,c.route),{listPath:paths[0],totalPath,pageSize:c.size});
+ }
+ const normalized=normalizeFfbRanking(raw,c.session);
+ if(!normalized.complete || total===null){
+  pendingPreview={session:c.session,rows:normalized.rows};$("view").value="all";$("center").value="";render();
+  const reasons=[];
+  if(normalized.missing.center)reasons.push(normalized.missing.center+" centres organisateurs manquants");
+  if(normalized.missing.series)reasons.push(normalized.missing.series+" séries de joueurs manquantes");
+  if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");
+  message(raw.length+" paires reçues et affichées en aperçu. Qualifications non calculées : "+reasons.join(" ; ")+". Clique sur Exporter la réponse JSON pour identifier les champs réels.");
+  return;
+ }
+ commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...normalized.rows]});
+ message(raw.length+" paires importées pour S"+c.session+" ; classement recalculé.");
+});
 $("inspect").onclick=run(async()=>{inspect();message("Structure analysée.");});
 $("exportRaw").onclick=run(async()=>{download("cdp-query.json",JSON.parse($("raw").value));message("Export JSON lancé.");});
 $("preview").onclick=run(async()=>{const c=config(),raw=at(JSON.parse($("raw").value),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
