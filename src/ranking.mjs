@@ -100,3 +100,27 @@ export function computeRanking(rows, options = {}) {
   }
   return {completedSessions:[...completed].sort((a,b)=>a-b),ranking,finals,warnings};
 }
+
+// Comparaison historique recalculée à partir des mêmes résultats et conventions.
+// Aucune photographie de quota n'est enregistrée ni réutilisée comme règle.
+export function compareQuotaStages(rows, current, options={}){
+  const sessions=[...new Set(current.completedSessions)].sort((a,b)=>a-b);
+  const latest=sessions.at(-1)??null;
+  const previousSessions=sessions.slice(0,-1);
+  const previous=previousSessions.length?computeRanking(rows.filter(r=>previousSessions.includes(r.session)),{...options,completedSessions:previousSessions}):null;
+  const finals=current.finals.map(f=>{
+    const old=previous?.finals.find(p=>p.finale===f.finale);
+    const oldByCenter=new Map((old?.quotas??[]).map(q=>[q.center,q]));
+    const localMin=f.quotas?.reduce((n,q)=>n+q.quota,0)??null;
+    const unassigned=localMin===null?null:Math.max(0,f.capacity-f.reserved-localMin);
+    const quotas=f.quotas?.map(q=>{
+      const prior=oldByCenter.get(q.center);
+      const min=q.quota,max=q.quotaMax??min;
+      const priorMin=prior?.quota??null,priorMax=prior?prior.quotaMax??priorMin:null;
+      const delta=prior?{min:min-priorMax,max:max-priorMin}:null;
+      return {...q,quotaMin:min,quotaMax:max,priorMin,priorMax,delta,newCenter:!!previous&&!prior&&!!old?.quotas,priorUnavailable:!!previous&&!old?.quotas};
+    })??null;
+    return {...f,quotas,localMin,unassigned,unresolvedRemainder:!!f.quotas?.some(q=>q.quotaUncertain)};
+  });
+  return {latest,previousSessions,sessions,finals};
+}
