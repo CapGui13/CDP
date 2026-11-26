@@ -92,12 +92,20 @@ test("page unique : cache privé inaccessible à l'affichage avant token, retour
 
 test("coupe avant les noms : projection directe ou locale, égalités et hors projection",()=>{
  const source=html.slice(html.indexOf("const statuses="),html.indexOf("function openPair(p){"));
- const cells=new Function("document","pairDisplayWithSeries",source+"\nreturn {pairCell,qualificationCell};")({createElement:()=>element()},presentation.pairDisplayWithSeries);
+ const cells=new Function("document","pairDisplay","orderedPlayers","seriesDisplay",source+"\nreturn {pairCell,qualificationCell};")({createElement:()=>element()},presentation.pairDisplay,presentation.orderedPlayers,presentation.seriesDisplay);
  for(const [status,route,expected,label] of [["conditional","direct","🏆","Directe"],["provisional","center","🏆","Par centre"],["quota-uncertain",null,"?","Quota incertain"],["cutoff-tie","center","?","Ex æquo"],["center-ambiguous",null,"?","Centre ambigu"],["outside",null,"","Hors projection"],["impossible",null,"","Non qualifiable"]]){
   const tr=element(),p={status,route,count:1,players:[{name:"A",series:"1C"},{name:"B",series:"2P"}]};
   cells.pairCell(tr,p);cells.qualificationCell(tr,p);
   assert.equal(tr.children[0].children[0].textContent,expected);
-  assert.equal(tr.children[0].children[1].textContent,"A (1♥) / B (2♠)");
+  assert.equal(tr.children[0].children[1].textContent,"A / B");
+  const series=tr.children[0].children[2];
+  assert.equal(series.className,"pair-series");
+  assert.equal(series.children[0].children[0].textContent,"1");
+  assert.equal(series.children[0].children[1].textContent,"C");
+  assert.equal(series.children[0].children[1].className,"series-suit suit-C");
+  assert.equal(series.children[1].textContent," / ");
+  assert.equal(series.children[2].children[0].textContent,"2");
+  assert.equal(series.children[2].children[1].textContent,"P");
   assert.equal(tr.children[1].children[0].textContent,label);
  }
 });
