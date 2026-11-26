@@ -76,13 +76,27 @@ export function computeRanking(rows, options = {}) {
     }else if(left) warnings.push("Finale "+finale+" : participation non disponible, places restantes non réparties.");
     for(const e of entries){
       const candidates=ranking.filter(p=>p.finale===finale&&p.center===e.center&&!p.route);
-      if(direct.ties.length||e.quotaUncertain){for(const p of candidates.filter(p=>p.possible))p.status="quota-uncertain";e.local=null;}
-      else {const local=select(candidates,e.quota,"center");e.local=local.selected.map(p=>p.key);e.ties=local.ties.map(p=>p.key);e.tiePlaces=local.tiePlaces;e.vacant=Math.max(0,e.quota-local.selected.length-local.tiePlaces);}
+      if(direct.ties.length){for(const p of candidates.filter(p=>p.possible))p.status="quota-uncertain";e.local=null;}
+      else {
+        const local=select(candidates,e.quota,"center");
+        e.local=local.selected.map(p=>p.key);e.ties=local.ties.map(p=>p.key);e.tiePlaces=local.tiePlaces;e.vacant=Math.max(0,e.quota-local.selected.length-local.tiePlaces);
+        if(e.quotaUncertain){
+          e.quotaMax=e.quota+1;
+          const possible=candidates.filter(p=>p.possible).sort(compare);
+          // The lower quota is certain under this projection. Only the extra seat is unresolved.
+          const border=possible[e.quota];
+          e.extraCandidates=border?possible.filter(p=>!p.route&&compare(p,border)===0).map(p=>{p.status="quota-uncertain";return p.key;}):[];
+        }
+      }
       const participation=[...rows].filter(r=>r.center===e.center).length;
       e.averageTables=completed.size?participation/(2*completed.size):null;
       e.minimumTablesReached=e.averageTables!==null&&e.averageTables>=7;
     }
     finals.push({finale,capacity,reserved,direct:direct.selected.map(p=>p.key),directTies:direct.ties.map(p=>p.key),quotas:entries});
+  }
+  if(completed.size){
+    const small=centers.map(center=>({center,averageTables:rows.filter(r=>r.center===center).length/(2*completed.size)})).filter(c=>c.averageTables<7);
+    if(small.length)warnings.push("Moyenne actuelle inférieure à 7 tables : "+small.map(c=>c.center+" ("+c.averageTables.toLocaleString("fr-FR",{maximumFractionDigits:2})+")").join(", ")+". Signalement provisoire ; aucune exclusion automatique.");
   }
   return {completedSessions:[...completed].sort((a,b)=>a-b),ranking,finals,warnings};
 }
