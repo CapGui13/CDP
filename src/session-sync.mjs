@@ -16,7 +16,7 @@ export function mergeCache(rows,cache){
   for(const p of r.players){const prev=people.get(p.license);if(!prev)continue;for(const k of ["series","personId","firstName","lastName","profileAttemptedAt"])if(!p[k]&&prev[k])p[k]=prev[k];}
  }
 }
-export async function syncSession({client,session,id,cache=[],previousCoverage=null,centersOnly=false,signal,onCheckpoint=()=>{},onProgress=()=>{},onRaw=()=>{},maxProfiles=80,maxClubs=40}){
+export async function syncSession({client,session,id,cache=[],previousCoverage=null,previousCount=null,centersOnly=false,signal,onCheckpoint=()=>{},onProgress=()=>{},onRaw=()=>{},maxProfiles=80,maxClubs=40}){
  abort(signal);
  let payload,direct=true;
  try{payload=await client.fullSessionRanking(id);}catch(e){abort(signal);if(fatal(e))throw e;direct=false;payload=await client.sessionRanking(id,1,80,"results");}
@@ -33,16 +33,17 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
  const rows=normalizeFfbRanking(raw,session).rows;mergeCache(rows,cache);
  // Les données déjà validées ne doivent jamais être remplacées par une collecte raccourcie.
  const oldRows=cache.filter(r=>r.session===session);
- const oldCount=new Set(oldRows.map(key)).size;
+ const oldCount=previousCount??new Set(oldRows.map(key)).size;
  if(rows.length<oldCount)throw Error("Réponse plus courte que les données sauvegardées ; ancienne collecte conservée.");
  const errors=[];const codes=new Map();
  for(const r of rows){const c=clubCode(r);if(c){if(!codes.has(c))codes.set(c,[]);codes.get(c).push(r);}}
  const allCoded=[...codes.values()].reduce((n,g)=>n+g.length,0)===rows.length;
  const signature=JSON.stringify([id,rows.map(r=>[key(r),clubCode(r),r.ffbclubnetId]).sort((a,b)=>a[0].localeCompare(b[0]))]);
  let coverage=total===rows.length?"total FFB":null;
+ let checkedClubs=previousCoverage?.signature===signature?[...(previousCoverage.checkedClubs??[])]:[];
  if(!coverage&&previousCoverage?.signature===signature&&previousCoverage?.verified===true)coverage="couverture précédente";
  const reasons=()=>{const out=[];const missing=rows.filter(r=>!r.centerVerified).length;const unknown=rows.flatMap(r=>r.players).filter(p=>!p.series).length;if(missing)out.push(missing+" centres à confirmer");if(unknown)out.push(unknown+" séries manquantes");if(!coverage)out.push("exhaustivité FFB non confirmée");return out;};
- const checkpoint=()=>onCheckpoint({session,rows,reasons:reasons(),coverage:{verified:!!coverage,signature,source:coverage},errors:[...errors]});
+ const checkpoint=()=>onCheckpoint({session,rows,reasons:reasons(),coverage:{verified:!!coverage,signature,source:coverage,checkedClubs:[...checkedClubs]},errors:[...errors]});
  checkpoint();
  // Si le classement général possède des codes, contrôler seulement ces groupes.
  // Un club n'est validé que si le filtre officiel renvoie exactement les mêmes paires.
@@ -65,23 +66,26 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
   // Les rattachements ne sont publiés qu'après contrôle croisé de réponses disjointes.
   const confirmed=new Map(),observations=[];
   for(const r of rows.filter(r=>r.centerVerified))confirmed.set(key(r),String(r.centerCode));
-  const candidates=[...new Set([...codes.keys(),...Object.keys(seedClubs),...Object.keys(directory)])].filter(code=>!rows.some(r=>r.centerVerified&&String(r.centerCode)===code)).slice(0,Math.min(maxClubs,20));
+  const checked=new Set(previousCoverage?.signature===signature?previousCoverage.checkedClubs??[]:[]);
+  const candidates=[...new Set([...codes.keys(),...Object.keys(seedClubs),...Object.keys(directory)])].filter(code=>!checked.has(code)&&!rows.some(r=>r.centerVerified&&String(r.centerCode)===code)).slice(0,Math.min(maxClubs,20));
   let done=0,conflict=false;
   for(let i=0;i<candidates.length;i+=3){abort(signal);
    const batch=await Promise.all(candidates.slice(i,i+3).map(async code=>{try{return {code,keys:clubPairKeys(await client.clubSessionRanking(id,code),rows)};}catch(e){return {code,error:e};}}));
    let stop=null;
    for(const item of batch){done++;if(item.error){errors.push("Club "+item.code+" : "+item.error.message);if(fatal(item.error))stop=item.error;continue;}
     if([...item.keys].some(k=>confirmed.has(k)&&confirmed.get(k)!==item.code)){conflict=true;errors.push("Rattachements contradictoires pour le club "+item.code);continue;}
-    for(const k of item.keys)confirmed.set(k,item.code);if(item.keys.size)observations.push(item.code);
+    for(const k of item.keys)confirmed.set(k,item.code);if(item.keys.size)observations.push(item.code);else checked.add(item.code);
    }
    onProgress("Centres (secours) : "+done+"/"+candidates.length+" clubs · "+confirmed.size+"/"+rows.length+" paires recoupées.");
    abort(signal);if(stop)throw stop;if(conflict||confirmed.size===rows.length)break;
   }
   if(!conflict&&new Set(confirmed.values()).size>=2){
+   checkedClubs=[...checked];
    for(const r of rows){const code=confirmed.get(key(r));if(code){r.center=directory[code]||"Centre "+code;r.centerCode=code;r.centerVerified=true;}}
    if(direct&&Array.isArray(payload)&&confirmed.size===rows.length)coverage=coverage||"partition filtrée confirmée";
    checkpoint();
   }
+  if(!conflict){checkedClubs=[...checked];checkpoint();}
   if(rows.some(r=>!r.centerVerified))errors.push("Centres restants non confirmés : le général ne contient pas tous les codes utilisables. Aucun balayage des licenciés.");
  }
  // Contrôle indépendant du total, sans télécharger tout le classement une seconde fois.
@@ -104,5 +108,5 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
   }
  }
  checkpoint();
- return {rows,complete:reasons().length===0,reasons:reasons(),errors,coverage:{verified:!!coverage,signature,source:coverage},centers:rows.filter(r=>r.centerVerified).length,categories:rows.flatMap(r=>r.players).filter(p=>p.series).length};
+ return {rows,complete:reasons().length===0,reasons:reasons(),errors,coverage:{verified:!!coverage,signature,source:coverage,checkedClubs},centers:rows.filter(r=>r.centerVerified).length,categories:rows.flatMap(r=>r.players).filter(p=>p.series).length};
 }
