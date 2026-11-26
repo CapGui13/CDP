@@ -41,8 +41,8 @@ const seriesLabels=Object.freeze({
  "2PR":"2 Promotion","2P":"2♠","2C":"2♥","2K":"2♦","2T":"2♣",
  "3PR":"3 Promotion","3P":"3♠","3C":"3♥","3K":"3♦","3T":"3♣",
  "4PR":"4 Promotion","4P":"4♠","4C":"4♥","4K":"4♦","4T":"4♣","NC":"NC",
- "1NH":"1N HQ","1PH":"1♠ HQ","1CH":"1♥ HQ","1KH":"1♦ HQ","1TH":"1♣ HQ",
- "2PRH":"2 Promotion HQ","2MH":"2 majeure HQ","2H":"2 HQ","3H":"3 HQ"
+ "1NH":"1N","1PH":"1♠","1CH":"1♥","1KH":"1♦","1TH":"1♣",
+ "2PRH":"2 Promotion","2MH":"2 majeure","2H":"2","3H":"3"
 });
 export function seriesDisplay(code){return Object.hasOwn(seriesLabels,code)?seriesLabels[code]:"Série inconnue";}
 export function pairDisplayWithSeries(players){
