@@ -439,6 +439,9 @@ function openPair(p){
  field("Rang dans le centre (catégorie)",rank(d.centerRank,d.centerTotal));
  field("Rang local hors directs et paires définitivement non qualifiables",p.route==="direct"?"Qualification directe":rank(d.localRank,d.localTotal));
  field("Quota local prévisionnel",d.quotaMin===null?"À déterminer":d.quotaMin===d.quotaMax?String(d.quotaMin):d.quotaMin+" à "+d.quotaMax);
+ const localQuota=result.finals.find(f=>f.finale===p.finale)?.quotas?.find(q=>q.center===p.center);
+ if(p.status==="center-ambiguous")field("Centres possibles",p.candidateCenters.join(" / "));
+ if(localQuota?.centerCandidates?.length&&p.route!=="direct")field("Rattachements en attente",localQuota.centerCandidates.length+" paire(s) susceptibles d’affecter le classement local ; rang calculé sans ces paires.");
  field("Séances jouées ensemble",p.count+" / 6 · "+d.missing+" restante(s) pour atteindre 4");
  field("Moyenne actuelle",percent(p.average));
  if(d.boundary!==null&&p.route!=="direct"){
