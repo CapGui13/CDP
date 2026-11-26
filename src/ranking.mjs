@@ -8,7 +8,7 @@ export function computeRanking(rows, options = {}) {
   const centers = [...new Set(declaredCenters)];
   if (centers.some(c=>typeof c!=="string"||!c.trim())) throw Error("Centre invalide");
   const pairs = new Map(), players = new Map(), seenPlayers = new Set(), weights = new Map(), warnings = [];
-  const validSeries = ["1N","1P","1C","1K","1T","2P","2C","2K","2T","3P","3C","3K","3T","4P","4C","4K","4T","NC"];
+  const validSeries = ["1N","1P","1C","1K","1T","2PR","2P","2C","2K","2T","3PR","3P","3C","3K","3T","4PR","4P","4C","4K","4T","NC"];
   for (const row of rows) {
     const {session, center, score} = row;
     if (!completed.has(session) || typeof center!=="string" || !center.trim() || !Number.isFinite(score) || score<0 || score>100 || !Array.isArray(row.players) || row.players.length!==2) throw Error("Résultat invalide");
@@ -25,7 +25,7 @@ export function computeRanking(rows, options = {}) {
     const key=JSON.stringify(ps.map(p=>p.license));
     if(!centers.includes(center)) centers.push(center);
     const first=ps.some(p=>p.series.startsWith("1"));
-    const finale=first||ps.some(p=>["2P","2C"].includes(p.series))?1:2;
+    const finale=first||ps.some(p=>["2PR","2P","2C"].includes(p.series))?1:2;
     if(!pairs.has(key)) pairs.set(key,{key,players:ps,first,finale,results:[]});
     pairs.get(key).results.push({session,center,score,units:Math.round(score*100)});
     const wk=JSON.stringify([finale,center]);weights.set(wk,(weights.get(wk)||0)+1);
