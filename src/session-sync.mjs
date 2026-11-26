@@ -1,5 +1,5 @@
 // Synchronisation bornée : une seule source des scores, pas de balayage des licenciés.
-import {readRanking,normalizeFfbRanking,extractSeries} from "./auto-import.mjs?v=audit1";
+import {readRanking,normalizeFfbRanking,extractSeries} from "./auto-import.mjs?v=audit2";
 import {clubPairKeys,seedClubs} from "./club-centers.mjs?v=2";
 import {listTotal} from "./sync.mjs?v=1";
 const key=r=>JSON.stringify(r.players.map(p=>String(p.license)).sort());
@@ -60,8 +60,9 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
    if(direct&&Array.isArray(payload)&&rows.every(r=>r.centerVerified))coverage=coverage||"partition par codes confirmée";
    checkpoint();onProgress("Centres : "+rows.filter(r=>r.centerVerified).length+"/"+rows.length+" paires · "+done+"/"+todo.length+" clubs contrôlés.");
    abort(signal);if(stop)throw stop;
+   if(i===0&&batch.length>=2&&batch.every(item=>item.error?.message?.includes("tout le classement général")))break;
   }
- }else{
+ }else if(rows.some(r=>!r.centerVerified)){
   // Mode de secours : liste statique de clubs, pas d'annuaire ni de fiches de licenciés.
   // Les rattachements ne sont publiés qu'après contrôle croisé de réponses disjointes.
   const confirmed=new Map(),observations=[];
@@ -77,7 +78,7 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
     for(const k of item.keys)confirmed.set(k,item.code);if(item.keys.size)observations.push(item.code);else checked.add(item.code);
    }
    onProgress("Centres (secours) : "+done+"/"+candidates.length+" clubs · "+confirmed.size+"/"+rows.length+" paires recoupées.");
-   abort(signal);if(stop)throw stop;if(conflict||confirmed.size===rows.length)break;
+   abort(signal);if(stop)throw stop;if(conflict||confirmed.size===rows.length||(i===0&&batch.length>=2&&batch.every(item=>item.error?.message?.includes("tout le classement général"))))break;
   }
   if(!conflict&&new Set(confirmed.values()).size>=2){
    checkedClubs=[...checked];
