@@ -25,3 +25,10 @@ test("objectif à seuil 100 impossible et frontière incertaine sans cible",()=>
  const tie=computeRanking([row("a",1,60),row("b",1,60)],{completedSessions:[1],capacity:1,minimum:0,directPlaces:0});
  assert.deepEqual(scoreObjectives(tie,tie.ranking[0]),[]);
 });
+
+test("voie directe : objectif sur un seuil certain et uniquement pour les premières séries",()=>{
+ const rows=Array.from({length:6},(_,i)=>{const a=row("p"+i,1,70-i);a.players.forEach(p=>p.series="1C");return a;});
+ const r=computeRanking(rows,{completedSessions:[1]});const p=r.ranking.at(-1);
+ assert.equal(p.first,true);assert.equal(scoreObjectives(r,p,"direct")[0].score,66.34);
+ assert.deepEqual(scoreObjectives(r,{...p,first:false},"direct"),[]);
+});
