@@ -1,7 +1,7 @@
-import {computeRanking,compareQuotaStages} from "./ranking.mjs";
-import {qualificationDetails} from "./qualification-details.mjs";
-import {sportOverview,sessionRanking} from "./sport-dashboard.mjs";
-import {rankingHistory,isProjected,isUncertain} from "./ranking-tools.mjs";
+import {computeRanking,compareQuotaStages} from "./ranking.mjs?v=season-audit1";
+import {qualificationDetails} from "./qualification-details.mjs?v=season-audit1";
+import {sportOverview,sessionRanking} from "./sport-dashboard.mjs?v=season-audit1";
+import {rankingHistory,isProjected,isUncertain} from "./ranking-tools.mjs?v=season-audit1";
 import {pairDisplay,playerName} from "./presentation.mjs";
 export const normalizeSearch=s=>String(s??"").normalize("NFD").replace(/\p{M}/gu,"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
 function distance(a,b){let prev=Array.from({length:b.length+1},(_,i)=>i),older=null;for(let i=1;i<=a.length;i++){const cur=[i];for(let j=1;j<=b.length;j++){cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])cur[j]=Math.min(cur[j],older[j-2]+1);}older=prev;prev=cur;}return prev[b.length];}
