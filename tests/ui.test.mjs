@@ -13,6 +13,8 @@ import * as query from "../src/query-import.mjs";
 import * as details from "../src/qualification-details.mjs";
 import * as rankingTools from "../src/ranking-tools.mjs";
 import * as sportUI from "../src/sport-ui.mjs";
+import * as raceUI from "../src/race-ui.mjs";
+import * as raceTools from "../src/race-tools.mjs";
 const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const storeKey="cdp-2027-normalized-v1";
 function element(value=""){
@@ -29,7 +31,7 @@ function boot(storage,client,{published=null,acceptToken=true}={}){
  const document={getElementById:id=>elements.get(id),createElement:()=>element(),documentElement:{dataset:{}}};
  const Option=function(text,value){this.text=text;this.value=value;};
  const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))};
- const modules={"sport-ui.mjs":{createSportUI:config=>sportUI.createSportUI({...config,OptionCtor:Option})},"ranking-tools.mjs":rankingTools,"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
+ const modules={"race-ui.mjs":{createRaceUI:config=>raceUI.createRaceUI({...config,OptionCtor:Option})},"race-tools.mjs":raceTools,"sport-ui.mjs":{createSportUI:config=>sportUI.createSportUI({...config,OptionCtor:Option})},"ranking-tools.mjs":rankingTools,"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
@@ -153,4 +155,18 @@ test("tableau de bord, favoris, comparaison et fiche centre",async()=>{
  e.get("sportClose").onclick();e.get("statsCenter").value="A";e.get("centerStatsOpen").onclick();assert.equal(e.get("sportTitle").textContent,"A");
  e.get("sportClose").onclick();e.get("performanceSession").value="1";e.get("performanceOpen").onclick();assert.equal(e.get("sportTitle").textContent,"Performances de la séance 1");
  e.get("themeSwitch").onclick();assert.ok(storage.get("cdp-2027-view-preferences").includes("light"));
+});
+
+test("course finale : recherche tolérante, joueurs, bulletin, scénario, finales verrouillées",async()=>{
+ const rows=Array.from({length:3},(_,i)=>({session:1,center:"A",score:70-i,players:[{license:"a"+i,name:i===0?"Élise Dupont":"Jean Autre"+i,series:"3P"},{license:"b"+i,name:"Exemple B"+i,series:"3P"}]}));
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1],rows,previews:{},savedAt:"2026-11-26T20:00:00Z"},()=>String(++i));
+ const e=boot(new Map(),null,{published});await new Promise(resolve=>setTimeout(resolve,0));
+ assert.ok(e.get("raceStatus").textContent.includes("3 paires encore"));
+ e.get("search").value="dupon";e.get("search").oninput();assert.equal(e.get("ranking").children.length,1);
+ e.get("ranking").children[0].children[1].children[1].onclick();assert.ok(e.get("pairDetails").children.some(x=>x.children?.[0]?.textContent==="Course à la finale"));e.get("pairClose").onclick();
+ e.get("racePlayers").onclick();assert.equal(e.get("raceTitle").textContent,"Parcours individuels");
+ e.get("raceClose").onclick();e.get("racePartners").onclick();assert.equal(e.get("raceTitle").textContent,"Changements de partenaires");
+ e.get("raceClose").onclick();e.get("raceBulletin").onclick();assert.ok(e.get("raceDetails").children[1].value.includes("Bilan S1"));
+ e.get("raceClose").onclick();e.get("raceSimulation").onclick();assert.equal(e.get("raceTitle").textContent,"Simulateur global des qualifications");
+ e.get("raceClose").onclick();e.get("raceFinal").onclick();assert.ok(e.get("raceDetails").children[0].textContent.includes("six séances"));
 });
