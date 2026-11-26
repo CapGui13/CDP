@@ -34,3 +34,17 @@ export function displayCategory(players){
  if(players.some(p=>cat1.has(p.series)))return 1;
  return players.length===2&&players.every(p=>cat2.has(p.series))?2:null;
 }
+
+// Affichage uniquement : ne change ni l'identité, ni le classement, ni la qualification.
+const seriesLabels=Object.freeze({
+ "1N":"1N","1P":"1♠","1C":"1♥","1K":"1♦","1T":"1♣",
+ "2PR":"2 Promotion","2P":"2♠","2C":"2♥","2K":"2♦","2T":"2♣",
+ "3PR":"3 Promotion","3P":"3♠","3C":"3♥","3K":"3♦","3T":"3♣",
+ "4PR":"4 Promotion","4P":"4♠","4C":"4♥","4K":"4♦","4T":"4♣","NC":"NC",
+ "1NH":"1N HQ","1PH":"1♠ HQ","1CH":"1♥ HQ","1KH":"1♦ HQ","1TH":"1♣ HQ",
+ "2PRH":"2 Promotion HQ","2MH":"2 majeure HQ","2H":"2 HQ","3H":"3 HQ"
+});
+export function seriesDisplay(code){return Object.hasOwn(seriesLabels,code)?seriesLabels[code]:"Série inconnue";}
+export function pairDisplayWithSeries(players){
+ return orderedPlayers(players).map(p=>p.formatted.display+" ("+seriesDisplay(p.series)+")").join(" / ");
+}
