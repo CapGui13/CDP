@@ -189,6 +189,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync4";
 import {discoverSessions,collectCommitteePeople,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=1";
+import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=sync4";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=iv2";
 import {computeRanking} from "./src/ranking.mjs?v=iv2";
@@ -196,7 +197,7 @@ import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persis
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
-let pendingPreview=null,publicMode=false;
+let pendingPreview=null,publicMode=false,aggregatePreview=false;
 const discovered=new Map([[1,364548]]);
 let api=null,busy=false,state={completedSessions:[],rows:[],previews:{},savedAt:null},result=null;
 const storage="cdp-2027-normalized-v1";
@@ -209,7 +210,7 @@ function config(){
  return {session,id,page,size,route:$("route").value};
 }
 function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
-function startLocal(){if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;publicMode=false;render();}}
+function startLocal(){if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
 function run(fn){return async()=>{if(busy)return;busy=true;$("query").disabled=true;$("syncAll").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=JSON.parse($("raw").value);const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload){$("raw").value=JSON.stringify(payload,null,2);inspect();}
@@ -219,15 +220,16 @@ function saveSnapshot(next,preview=null){
  const parsed=readSnapshot(next),checked=validate(parsed);
  try{localStorage.setItem(storage,JSON.stringify(parsed));}
  catch(e){throw Error("Sauvegarde locale impossible : espace insuffisant ou stockage bloqué. Les anciennes données sont conservées.");}
- publicMode=false;state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;render();
+ publicMode=false;state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;aggregatePreview=Object.keys(state.previews).length>0;render();
 }
 function commit(next){saveSnapshot(withValidated(state,next));}
 function storePreview(preview){const update=withPreview(state,preview);saveSnapshot(update.snapshot,preview);return update.kept;}
 function updateArchive(){
  const select=$("savedView");select.replaceChildren(new Option("Classement validé",""));
  const entries=Object.values(state.previews??{}).sort((a,b)=>a.session-b.session);
+ if(entries.length)select.add(new Option("Classement général de toutes les collectes (provisoire)","aggregate"));
  for(const p of entries)select.add(new Option("S"+p.session+" · "+p.rows.length+" paires collectées (aperçu)",String(p.session)));
- select.value=pendingPreview?String(pendingPreview.session):"";
+ select.value=aggregatePreview&&entries.length?"aggregate":pendingPreview?String(pendingPreview.session):"";
  $("savedInfo").textContent=publicMode?"Classement public · lecture seule · "+(state.savedAt?new Date(state.savedAt).toLocaleString("fr-FR"):"aucune publication") : state.savedAt?"Sauvegarde locale : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · "+state.completedSessions.length+" séance(s) validée(s) · "+entries.length+" aperçu(s)":"Aucune collecte sauvegardée.";
 }
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
@@ -237,12 +239,21 @@ function render(){
  updateArchive();
  const selected=$("center").value;
  $("center").replaceChildren(new Option("Tous les centres",""));
- for(const c of [...new Set((pendingPreview?.rows??state.rows).map(r=>r.center).filter(Boolean))].sort())$("center").add(new Option(c,c));
+ for(const c of [...new Set((aggregatePreview?[...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)]:pendingPreview?.rows??state.rows).map(r=>r.center).filter(Boolean))].sort())$("center").add(new Option(c,c));
  $("center").value=[...$("center").options].some(o=>o.value===selected)?selected:"";
  $("overview").textContent=result.completedSessions.length+" / 6 séances importées · "+result.ranking.length+" paires distinctes";
  const view=$("view").value,center=$("center").value,search=$("search").value.toLocaleLowerCase("fr");
  const rows=result.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
  $("ranking").replaceChildren();$("empty").hidden=rows.length>0;
+ if(aggregatePreview&&Object.keys(state.previews).length){
+  const all=provisionalRanking(state);
+  $("overview").textContent=all.sessions.length+" / 6 séances collectées · "+all.ranking.length+" paires · "+all.ranking.filter(p=>p.finale!==null).length+" catégorisées";
+  const list=all.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
+  for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(p.finale??"unknown");td(tr,p.rank,"numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,p.finale??"—");td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);}
+  $("empty").hidden=list.length>0;
+  $("quotas").textContent="Classement de travail : "+all.validated+" séance(s) validée(s). Les qualifications sont suspendues tant que les collectes en attente ne sont pas validées.";
+  return;
+ }
  if(pendingPreview){
   const pp=pendingPreview;
   $("overview").textContent="Aperçu FFB sauvegardé S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
@@ -361,15 +372,15 @@ $("save").onclick=()=>download("cdp-2027-seances.json",state);
 $("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length&&!Object.keys(state.previews).length)throw Error("Aucun résultat collecté.");download("published.json",publicSnapshot(state));message("Fichier public préparé. Dépose-le dans data/published.json sur GitHub pour rendre le classement consultable.");});
 $("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
 for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
-$("savedView").onchange=()=>{pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
-try{const cached=localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
+$("savedView").onchange=()=>{aggregatePreview=$("savedView").value==="aggregate";pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
+try{const cached=localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
 render();
 if(!state.rows.length&&!Object.keys(state.previews).length){
  fetch("./data/published.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Publication indisponible");return r.json();}).then(data=>{
   if(busy||state.rows.length||Object.keys(state.previews).length)return;
   const published=readPublicSnapshot(data);
   if(!published.rows.length&&!Object.keys(published.previews).length)return;
-  result=validate(published);state=published;publicMode=true;pendingPreview=state.rows.length?null:latestPreview(state);render();
+  result=validate(published);state=published;publicMode=true;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);render();
  }).catch(()=>{});
 }
 </script></body></html>
