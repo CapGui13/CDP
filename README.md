@@ -39,8 +39,8 @@ Statut : initialisation. Aucun résultat FFB n'a encore été importé.
 
 1. Dans Settings → Pages, choisir Deploy from a branch, main, / (root).
 2. Ouvrir https://capgui13.github.io/CDP/ une fois le déploiement terminé.
-3. Se connecter avec son compte FFB et la clé Firebase utilisée dans l'ancien studio CVS. Les secrets ne sont pas sauvegardés.
-4. S1 / 364548 est préconfigurée. Cliquer sur Query : résultats (page 1).
+3. Se connecter avec son adresse e-mail et son mot de passe FFB. La configuration client Firebase reprise du Ranking E-Open est intégrée ; les identifiants et jetons ne sont pas sauvegardés. Les restrictions de la clé côté projet Firebase restent sous le contrôle de la FFB.
+4. S1 / 364548 est préconfigurée. Cliquer sur Actualiser depuis la FFB (page 1).
 5. Exporter le JSON reçu ou relever sa structure pour définir le mapping réel. Ne pas partager les jetons ou les données non nécessaires.
 6. Renseigner les chemins du tableau, du total et des champs, puis tester le mapping. Récupérer toutes les pages et importer seulement après validation.
 7. Le classement est mis à jour localement ; exporter les séances normalisées pour sauvegarder ou transférer les données.
