@@ -25,24 +25,29 @@ Source réglementaire unique : [règlement du Comité de Provence](https://coupe
 - Ex æquo à une frontière de qualification : signaler, ne pas départager par le nom ou la licence.
 - Insuffisance de candidats : afficher les places vacantes et signaler les cas non définis ; aucune qualification automatique non justifiée.
 
-## Architecture cible
+## Fonctionnement actuel (26 novembre 2026)
 
-1. Moteur JavaScript pur, indépendant des API et de l'interface, avec tests reproductibles.
-2. Import des résultats FFB sur le modèle de KOTP : authentification côté GitHub Actions, jamais d'identifiants ni de jetons dans la page publique.
-3. Données normalisées par séance, centre, paire et classement des joueurs ; validation avant publication atomique.
-4. Interface GitHub Pages : général, finales, centres, détail des séances, barres de qualification et statut de participation.
-5. Les projections restent non officielles, les résultats manquants ne sont jamais traités comme des absences confirmées.
+- Classement de travail cumulatif dès la première collecte, même si les centres ou certaines séries sont encore inconnus. Moyenne des quatre meilleurs scores disponibles, paires identifiées par licences triées. Aucune qualification calculée sur une collecte incomplète.
+- Actualisation directe du simultané 12, étape S1 = 364548 ; découverte des autres étapes sur les six dates convenues. Les identifiants ambigus et les dates hors calendrier sont écartés.
+- Enrichissement des séries : champs explicites et IV du résultat FFB, recherche groupée des licenciés actifs du comité de Provence (code 5400000) et consultation des fiches de classement de la saison FFB 38 si nécessaire. L'IC n'est jamais utilisé à la place de l'IV.
+- Centres de jeu : lecture des champs explicites de centre, tournoi local ou club organisateur. Le club de licence du joueur n'est jamais utilisé comme substitut. Le champ effectif du résultat du simultané 12 n'a pas encore été confirmé.
+- Stockage local automatique des collectes et aperçus par séance, conservation des résultats validés ; sauvegarde régulière pendant l'enrichissement. Les données brutes et les jetons ne sont pas sauvegardés.
+- Classement public : export sportif minimal dans data/published.json, consultable sans connexion une fois le fichier publié sur GitHub Pages. Les identifiants FFB et internes sont exclus et remplacés par des identifiants aléatoires propres à la publication. La publication est volontaire et manuelle, sans clé d'écriture GitHub dans le navigateur. Ne publier que les résultats dont la diffusion est autorisée.
 
-Statut : initialisation. Aucun résultat FFB n'a encore été importé.
+### Utilisation
 
-## Studio par query (sans secrets GitHub Actions)
+1. Ouvrir https://capgui13.github.io/CDP/.
+2. Se connecter avec son e-mail et son mot de passe FFB ; aucune clé à saisir.
+3. Cliquer sur « Actualiser toutes les séances FFB » ou actualiser la séance choisie. Les résultats récupérés s'affichent et sont sauvegardés.
+4. Si les centres restent inconnus : dans Outils avancés, exporter le schéma (sans données personnelles), pour identifier le champ réel du centre organisateur. Si nécessaire le mapping explicite des résultats permet un import validé.
+5. Pour partager : « Préparer le classement public », déposer le fichier published.json dans data/ sur GitHub (ou demander à l'assistant de le publier après avoir fourni le fichier). Le classement public est lu automatiquement par les visiteurs sans données locales.
 
-1. Dans Settings → Pages, choisir Deploy from a branch, main, / (root).
-2. Ouvrir https://capgui13.github.io/CDP/ une fois le déploiement terminé.
-3. Se connecter avec son adresse e-mail et son mot de passe FFB. La configuration client Firebase reprise du Ranking E-Open est intégrée ; les identifiants et jetons ne sont pas sauvegardés. Les restrictions de la clé côté projet Firebase restent sous le contrôle de la FFB.
-4. S1 / 364548 est préconfigurée. Cliquer sur Actualiser depuis la FFB (page 1).
-5. Exporter le JSON reçu ou relever sa structure pour définir le mapping réel. Ne pas partager les jetons ou les données non nécessaires.
-6. Renseigner les chemins du tableau, du total et des champs, puis tester le mapping. Récupérer toutes les pages et importer seulement après validation.
-7. Le classement est mis à jour localement ; exporter les séances normalisées pour sauvegarder ou transférer les données.
+### Tests et état de recette
 
-Les deux routes de classement déjà permises par le relais existant sont sélectionnables. Le schéma des résultats CDP et les champs de séries doivent encore être confirmés sur une query réelle. Les hypothèses de mapping ne sont jamais appliquées silencieusement. La publication publique automatique de résultats n'est pas activée.
+Commande : `node --test tests/*.test.mjs`.
+
+Le 26 novembre, les 24 cas des trois fichiers de tests ont été exécutés dans un environnement JavaScript avec un harnais d'assertions compatible (24 réussites, 0 échec). Syntaxe du script de la page et 42 références DOM contrôlées. La recette de bout en bout avec une connexion FFB réelle et le déploiement du classement public contenant les véritables résultats restent à faire.
+
+Le fichier public initial est vide ; aucun résultat fictif n'est publié. La qualification est une projection indépendante, non un résultat officiel du Comité.
+
+Références : [règlement du Comité](https://coupedeprovence.bridgecomitedeprovence.com/ReglementCoupedeProvence2026.php), [barème des IV](https://bridge-courbevoie.fr/en-savoir-plus/indice-de-competition-de-valeur-162852). Le tableau des seuils cité date de 2024-2025 ; les correspondances utilisées sont à confirmer pour les cas hors quota et la saison de référence.
