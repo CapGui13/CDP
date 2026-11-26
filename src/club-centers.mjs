@@ -74,8 +74,8 @@ export function assignClubCenters(globalRows,observations){
  }
  return {assigned,conflicts:existingConflicts,clubs:new Set(nonEmpty).size,remaining:globalRows.filter(r=>!r.center).length,verified:true};
 }
-export async function collectClubCenters(client,id,rows,clubs=seedClubs,onProgress=()=>{}){
- const observations=[],errors=[];const entries=Object.entries(clubs);
+export async function collectClubCenters(client,id,rows,clubs=seedClubs,onProgress=()=>{},previous=[]){
+ const observations=[...previous],errors=[];const entries=Object.entries(clubs).filter(([code])=>!previous.some(o=>o.code===code));
  for(let i=0;i<entries.length;i++){
   const [code,name]=entries[i];
   try{
@@ -90,4 +90,21 @@ export async function collectClubCenters(client,id,rows,clubs=seedClubs,onProgre
  }
  const report=assignClubCenters(rows,observations);
  return {...report,errors,observations};
+}
+
+export async function discoverClubDirectory(client,onProgress=()=>{}){
+ const directory={};let total=null,seen=new Set();
+ for(let page=1;page<=150;page++){
+  const payload=await client.persons({maxPerPage:100,ffbCode:"5400000",isClubLicensee:1,currentPage:page});
+  const list=Array.isArray(payload)?payload:["items","results","content","persons","data"].map(k=>payload?.[k]).find(Array.isArray);
+  if(!list)throw Error("Annuaire FFB : format non reconnu.");
+  if(!list.length)break;
+  const signature=JSON.stringify(list.map(p=>p?.id??p?.ffbId));
+  if(seen.has(signature))throw Error("Annuaire FFB : pagination répétée.");
+  seen.add(signature);Object.assign(directory,clubDirectoryFromPeople(payload));
+  if(page===1){const n=payload?.pagination?.total_items??payload?.pagination?.totalItems??payload?.pagination?.total??payload?.total;total=n!=null&&Number.isSafeInteger(Number(n))?Number(n):null;}
+  onProgress({page,clubs:Object.keys(directory).length});
+  if(list.length<100||(total!==null&&page*100>=total))return directory;
+ }
+ return directory;
 }
