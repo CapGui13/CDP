@@ -1,5 +1,5 @@
 // Network-first public-only cache. No tokens, API requests or private drafts.
-const CACHE="cdp-public-2026-11-26-canonical-v1";
+const CACHE="cdp-public-2026-11-26-canonical-symbols-v4";
 const ASSETS=["./","./index.html","./manifest.webmanifest","./icon.svg","./data/published.json",...["center-names","auto-import","club-centers","sync","persistence","presentation","provisional","publication","ranking","query-import","session-sync","ffb-browser","github-publish","qualification-details","ranking-tools","sport-dashboard","sport-ui","race-tools","race-ui","xlsx-export"].map(n=>"./src/"+n+".mjs")];
 const scope=new URL(self.registration.scope);
 const allowed=new Set(ASSETS.map(a=>new URL(a,scope).pathname));
@@ -11,7 +11,7 @@ self.addEventListener("fetch",event=>{
  const key=new URL(url.pathname,url.origin).href;
  event.respondWith((async()=>{
   const cache=await caches.open(CACHE);
-  try{const response=await fetch(req,{cache:"no-cache"});if(response.ok&&response.type==="basic"){try{await cache.put(key,response.clone());}catch{}}return response;}
+  try{const response=await fetch(req,{cache:"no-store"});if(response.ok&&response.type==="basic"){try{await cache.put(key,response.clone());}catch{}}return response;}
   catch(e){const cached=await cache.match(key);if(!cached)throw e;if(url.pathname.endsWith("/data/published.json")){const headers=new Headers(cached.headers);headers.set("X-CDP-Offline","1");return new Response(await cached.blob(),{status:200,headers});}return cached;}
  })());
 });
