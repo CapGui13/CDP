@@ -10,15 +10,23 @@ export function readRanking(payload){
 }
 const first=(...values)=>values.find(v=>v!=null&&String(v).trim()!=="");
 const label=value=>typeof value==="string"?value.trim():typeof value?.name==="string"?value.name.trim():typeof value?.label==="string"?value.label.trim():"";
-const valid=new Set(["1N","1P","1C","1K","1T","2P","2C","2K","2T","3P","3C","3K","3T","4P","4C","4K","4T","NC"]);
+const valid=new Set(["1N","1P","1C","1K","1T","2PR","2P","2C","2K","2T","3PR","3P","3C","3K","3T","4PR","4P","4C","4K","4T","NC"]);
 export function seriesCode(value){
  const raw=typeof value==="string"?value:label(value);
  const s=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/Œ/g,"OE").trim();
  if(valid.has(s))return s;
- const m=s.match(/^([1-4])(?:ERE|RE|EME|E)?\s*(?:SERIE\s*)?([NPKCT]|NATIONAL(?:E)?|PIQUES?|COEURS?|CARREAUX?|TREFLES?|[♠♥♦♣])$/);
+ const m=s.match(/^([1-4])(?:ERE|RE|EME|E)?\s*(?:SERIE\s*)?([NPKCT]|PROMOTION|NATIONAL(?:E)?|PIQUES?|COEURS?|CARREAUX?|TREFLES?|[♠♥♦♣])$/);
  if(!m)return null;
- const suffix=({"♠":"P","♥":"C","♦":"K","♣":"T",NATIONAL:"N",NATIONALE:"N",PIQUE:"P",PIQUES:"P",COEUR:"C",COEURS:"C",CARREAU:"K",CARREAUX:"K",TREFLE:"T",TREFLES:"T"})[m[2]]||m[2];
+ const suffix=({"♠":"P","♥":"C","♦":"K","♣":"T",PROMOTION:"PR",NATIONAL:"N",NATIONALE:"N",PIQUE:"P",PIQUES:"P",COEUR:"C",COEURS:"C",CARREAU:"K",CARREAUX:"K",TREFLE:"T",TREFLES:"T"})[m[2]]||m[2];
  return valid.has(m[1]+suffix)?m[1]+suffix:null;
+}
+// Barème IV FFB, catégories ordinaires. Les IV hors quota restent à confirmer par la série explicite.
+const ivSeries={100:"1N",92:"1P",84:"1C",76:"1K",68:"1T",60:"2PR",56:"2P",52:"2C",48:"2K",44:"2T",40:"3PR",38:"3P",36:"3C",34:"3K",32:"3T",30:"4PR",28:"4P",26:"4C",24:"4K",22:"4T",20:"NC"};
+export function extractSeries(p){
+ const explicit=[p?.series,p?.serie,p?.seriesLabel,p?.ranking?.series,p?.iv?.series,p?.iv?.label,p?.iv?.classification,p?.classification?.label,p?.person?.series,p?.person?.iv?.series].map(seriesCode).find(Boolean);
+ if(explicit)return explicit;
+ const v=[p?.iv?.iv,p?.iv?.value,p?.iv,p?.valueIndex,p?.indiceValeur,p?.person?.iv?.iv,p?.person?.iv].find(x=>(typeof x==="number"||typeof x==="string")&&String(x).trim()!==""&&Object.hasOwn(ivSeries,Number(x)));
+ return v==null?null:ivSeries[Number(v)];
 }
 export function normalizeFfbRanking(rows,session){
  const seen=new Set(), missing={center:0,series:0};
@@ -31,9 +39,9 @@ export function normalizeFfbRanking(rows,session){
    if(!/^\d+$/.test(license)||seen.has(license))throw Error("Licence manquante ou répétée à la paire "+(i+1)+".");
    seen.add(license);
    const name=String(first(p.name,[p.firstName,p.lastName].filter(Boolean).join(" "))||license);
-   const series=[p.series,p.serie,p.seriesLabel,p.ranking?.series,p.iv?.series,p.iv?.label,p.classification?.label].map(seriesCode).find(Boolean)||null;
+   const series=extractSeries(p);
    if(!series)missing.series++;
-   return {license,name,series,firstName:typeof (p.firstName??p.first_name)==="string"?(p.firstName??p.first_name):undefined,lastName:typeof (p.lastName??p.last_name)==="string"?(p.lastName??p.last_name):undefined};
+   return {license,name,series,personId:Number.isSafeInteger(Number(p.personId??p.id))&&Number(p.personId??p.id)>0?Number(p.personId??p.id):null,firstName:typeof (p.firstName??p.first_name)==="string"?(p.firstName??p.first_name):undefined,lastName:typeof (p.lastName??p.last_name)==="string"?(p.lastName??p.last_name):undefined};
   });
   const raw=first(row.sessionScore,row.score,row.percentage,row.percent);
   const score=Number(String(raw??"").replace("%","").trim().replace(",","."));
