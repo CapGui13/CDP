@@ -1,5 +1,5 @@
 // Network-first public-only cache. No tokens, API requests or private drafts.
-const CACHE="cdp-public-2026-11-26-canonical-symbols-v4";
+const CACHE="cdp-public-2026-11-26-canonical-symbols-v5";
 const ASSETS=["./","./index.html","./manifest.webmanifest","./icon.svg","./data/published.json",...["center-names","auto-import","club-centers","sync","persistence","presentation","provisional","publication","ranking","query-import","session-sync","ffb-browser","github-publish","qualification-details","ranking-tools","sport-dashboard","sport-ui","race-tools","race-ui","xlsx-export"].map(n=>"./src/"+n+".mjs")];
 const scope=new URL(self.registration.scope);
 const allowed=new Set(ASSETS.map(a=>new URL(a,scope).pathname));
