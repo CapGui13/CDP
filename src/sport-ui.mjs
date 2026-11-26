@@ -74,7 +74,7 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
  $("compareOpen").onclick=openComparison;
  $("printRanking").onclick=()=>{if(typeof window!=="undefined")window.print();};
  $("installApp").onclick=async()=>{if(installEvent){const event=installEvent;installEvent=null;await event.prompt();}else $("sportNotice").textContent="Android ou ordinateur : menu du navigateur → Installer l’application. iPhone : Safari → Partager → Sur l’écran d’accueil." ;};
- if(typeof window!=="undefined"){window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvent=e;});window.addEventListener("appinstalled",()=>{$("installApp").hidden=true;});if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});}
+ if(typeof window!=="undefined"){window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvent=e;});window.addEventListener("appinstalled",()=>{$("installApp").hidden=true;});if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});}
  return {
   render(hidden){
    $("sportPanel").hidden=hidden;if(hidden)return;
