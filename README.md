@@ -18,7 +18,7 @@ Source réglementaire unique : [règlement du Comité de Provence](https://coupe
 - Identité de la paire : deux licences triées. Une autre composition constitue une nouvelle paire.
 - Moyenne des quatre meilleurs pourcentages, provisoirement sur les résultats disponibles ; quatre participations ensemble nécessaires avant qualification effective.
 - Catégorie déterminée par le joueur le mieux classé, y compris pour les qualifications directes ; classement de série de référence à conserver pendant la saison.
-- Centre de rattachement : centre le plus fréquenté ; égalité de fréquentation signalée, sans attribution arbitraire.
+- Centre de rattachement : centre le plus fréquenté ; égalité de fréquentation signalée, sans attribution arbitraire. Si ce rattachement peut déloger une paire locale, la place menacée est signalée comme incertaine ; seuils et vacances dépendants du rattachement restent indéterminés.
 - Projection locale : classement sur la moyenne générale, et participation mesurée par les occurrences de paires par catégorie et centre dans les étapes publiées. Cette définition opérationnelle du prorata n'est pas détaillée par le règlement.
 - Places directes réservées dans le plafond de la finale 1, pas de double qualification ; minimum local puis distribution des places restantes au plus fort reste, avec plafond de 60.
 - Sept tables : indicateur de participation, pas de suppression automatique du minimum de deux places.
@@ -64,6 +64,10 @@ Recette du lot : 11 tests ciblés exécutés dans le harnais JavaScript simulé,
 - Export XLSX natif du classement filtré et trié, avec scores numériques et chaînes littérales, sans licence ni données privées.
 - Recette : 7 scénarios d'interface simulée et 7 tests métier ciblés (dont vérification de la structure ZIP/XLSX), contrôles des 346 paires réelles. Charge synthétique : 6 000 résultats, 1 000 paires, 2 000 joueurs et 16 centres ; classement calculé en environ 52 ms et statistiques en 264 ms dans le harnais JavaScript. Ces durées sont indicatives, hors rendu DOM.
 - Le workflow `.github/workflows/browser.yml` lance Chromium/Playwright et axe, vérifie les dialogues, la simulation, l'export et les vues mobile/clair/sombre. Il publie un rapport d'accessibilité, une capture mobile et un export de test. L'exécution native et les éventuelles violations axe restent à vérifier ; aucun audit WCAG complet n'est revendiqué.
+
+## Recette d'une saison complète
+
+Voir [le rapport S1–S6](docs/RECETTE-SAISON-COMPLETE.md) : trois saisons synthétiques, 45 tests ciblés réussis dans le harnais JavaScript, résultat de S1 réelle intégralement inchangé. Le mode finale et les situations de rattachement ambigu sont testés. Les conventions réglementaires restent à confirmer par le Comité.
 
 ## Tests
 
