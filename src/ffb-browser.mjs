@@ -1,6 +1,6 @@
 // Client adapté de KOTP, secrets exclusivement côté serveur.
 const DEFAULT_PROXY='https://ranking-stalking-proxy.vercel.app';
-const MAX_ATTEMPTS=4;
+const MAX_ATTEMPTS=2;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 class ApiError extends Error {
   constructor(status, context, code = "") {
@@ -29,13 +29,17 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
   if (!email || !email.includes('@') || !password) throw new Error('Renseigner l’adresse e-mail FFB et le mot de passe');
   const apiKey = typeof firebaseApiKey === 'string' ? firebaseApiKey.trim() : '';
   if (!apiKey) throw new Error('Renseigner la clé Firebase FFB');
-  let token = '', refreshToken = '', expiry = 0, easi = '';
+  let token = '', refreshToken = '', expiry = 0, easi = '', operationSignal=null, refreshing=null;
+  const checkAbort=()=>{if(operationSignal?.aborted)throw new Error('Synchronisation interrompue.');};
 
   async function request(url, opts = {}, context = 'API') {
     let last;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const res = await fetchImpl(url, { ...opts, signal: AbortSignal.timeout(30000) });
+        checkAbort();
+        const timeout=AbortSignal.timeout(12000);
+        const signal=operationSignal?AbortSignal.any([operationSignal,timeout]):timeout;
+        const res = await fetchImpl(url, { ...opts, signal });
         if (!res.ok) {
           let code = "";
           // Only disclose machine-readable error identifiers, never raw bodies or credentials.
@@ -50,7 +54,9 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
         }
         return await res.json();
       } catch (e) {
+        if(operationSignal?.aborted)throw new Error('Synchronisation interrompue.');
         last = e;
+        if(e.status===429)throw e;
         const temporary = !(e instanceof ApiError) || [408, 425, 429, 500, 502, 503, 504].includes(e.status);
         if (!temporary || attempt === MAX_ATTEMPTS) break;
         await pause(Math.min(12000, 700 * 2 ** (attempt - 1)));
@@ -72,7 +78,10 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
 
   async function ensureToken() {
     if (token && Date.now() < expiry) return;
-    if (!refreshToken) return signin();
+    checkAbort();
+    if(refreshing)return refreshing;
+    if (!refreshToken) throw Error('Session expirée : reconnecte-toi à la FFB.');
+    refreshing=(async()=>{
     const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken });
     const data = await request('https://securetoken.googleapis.com/v1/token?key=' + encodeURIComponent(apiKey), {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString()
@@ -81,6 +90,8 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     token = data.id_token; refreshToken = data.refresh_token || refreshToken;
     expiry = Date.now() + Math.max(60, Number(data.expires_in) || 3600) * 1000 - 60000;
     easi = '';
+    })();
+    try{await refreshing;}finally{refreshing=null;}
   }
 
   async function call(base, path, params = {}, bearer = null) {
@@ -109,7 +120,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     const path = `api/persons/${pid}/ranking-page`, params = { seasonId };
     let error;
     try { return await call('www', path, params); }
-    catch (e) { error = e; }
+    catch (e) { checkAbort(); if(e.status===429||e.status>=500)throw e; error = e; }
     // En cas de 401/403 sur www, l'API accepte parfois le jeton EASI.
     if ([401, 403].includes(error?.status)) {
       try {
@@ -121,10 +132,10 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
             body: JSON.stringify({ base: 'www', path, params })
           }, 'FFB classement EASI');
         }
-      } catch { /* lancelot est une alternative existante dans KOTP */ }
+      } catch(e) { checkAbort();if(e.status===429||e.status>=500)throw e; }
     }
     try { return await call('lancelot', `persons/${pid}/ranking-page`, params); }
-    catch { throw error; }
+    catch(e) { checkAbort();if(e.status===429||e.status>=500)throw e;throw error; }
   }
 
   async function registration(pid) {
@@ -133,7 +144,9 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
   }
 
   await signin();
+  password='';
   return {
+    setOperationSignal: signal=>{operationSignal=signal;},
     currentSeason: () => call('lancelot', 'seasons/current'),
     persons: (params) => call('www','api/persons/search',params),
     ranking,
@@ -144,7 +157,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     clubSessionRanking: async (id,club) => {
       const pageSize=80, collected=[], signatures=new Set();
       let expected=null;
-      for(let page=1;page<=100;page++){
+      for(let page=1;page<=8;page++){
         const data=await call('www', `api/results/sessions/${id}/ranking`, {simultaneousId:club,paginate:true,currentPage:page,maxPerPage:pageSize});
         const list=Array.isArray(data)?data:[data?.items,data?.results,data?.content,data?.ranking,data?.pairs,data?.data,data?.data?.items,data?.data?.results,data?.data?.content,data?.data?.ranking].find(Array.isArray);
         if(!list)throw Error("Classement du club : format FFB inconnu.");
