@@ -27,7 +27,7 @@ Source réglementaire unique : [règlement du Comité de Provence](https://coupe
 
 ## Fonctionnement actuel — audit du 26 novembre 2026
 
-Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md).
+Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md) et [audit réglementaire et recette du classement](docs/AUDIT-QUALIFICATIONS-2026-11-26.md).
 
 - Page unique : https://capgui13.github.io/CDP/. Le classement public est affiché par défaut, indépendamment du cache privé. Pour gérer la saison, cliquer sur « Gestion », renseigner un token GitHub limité à CapGui13/CDP (Contents : lecture et écriture), puis se connecter à la FFB et actualiser les séances. Les résultats privés déjà sauvegardés sont restaurés après déverrouillage. Le token est conservé uniquement en mémoire et ne transite pas par le proxy FFB.
 - « Identifier les centres de jeu » traite seulement les centres ; « Actualiser la séance choisie » traite la séance sélectionnée. L'arrêt manuel et la limite de deux minutes conservent les collectes effectuées. Une nouvelle actualisation reprend les fiches et centres restants.
@@ -35,6 +35,10 @@ Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md).
 - Le barème IV comprend les neuf catégories hors quota. Les fiches fédérales sont consultées uniquement si la série manque.
 - Les moyennes cumulées sont visibles dès la première collecte ; les qualifications ne sont calculées que pour les séances validées (couverture, centres, séries).
 - La sauvegarde reste locale au navigateur ; export JSON privé possible. Après validation des séances, « Publier le classement » envoie directement le fichier sportif minimal à GitHub (`data/published.json`, branche main). Les numéros FFB et identifiants internes sont exclus. La publication refuse une sauvegarde plus ancienne, une séance supprimée/raccourcie ou une modification concurrente ; GitHub confirme les droits effectifs d’écriture au moment de la publication. Fermer la gestion réaffiche le classement public et efface le token de la mémoire applicative. Ne jamais déposer une sauvegarde privée brute dans ce dépôt public.
+
+## Consultation du classement public
+
+Les filtres se combinent avec la recherche, la finale et le centre. Les en-têtes sont cliquables pour trier les colonnes ; les rangs réels ne sont jamais renumérotés après filtrage. La fiche de paire affiche les rangs, seuils locaux certains, conditions de participation, scores retenus et historique cumulatif des séances. Les mouvements de qualification sont disponibles dès la deuxième séance validée. Le simulateur compare les scores hypothétiques aux adversaires et seuils actuels, à quotas et voies de qualification figés, sans enregistrer ni publier les hypothèses. Sur téléphone, la vue compacte conserve rang, paire et moyenne ; le bouton « Toutes les colonnes » rétablit le tableau complet.
 
 ## Tests
 
