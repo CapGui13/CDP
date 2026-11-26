@@ -1,3 +1,4 @@
+import {normalizeCenter} from "./center-names.mjs";
 // Persistance du classement validé et des aperçus FFB non encore validés.
 // Aucune donnée d'authentification ni réponse brute FFB n'est stockée.
 export function readSnapshot(input) {
@@ -14,9 +15,9 @@ export function readSnapshot(input) {
         seen.add(player.license);
       }
     }
-    previews[key]={session,rows:p.rows,savedAt:typeof p.savedAt==="string"?p.savedAt:null,reasons:Array.isArray(p.reasons)?p.reasons.filter(x=>typeof x==="string"):[],coverage:p.coverage&&typeof p.coverage.signature==="string"?{verified:p.coverage.verified===true,signature:p.coverage.signature,source:typeof p.coverage.source==="string"?p.coverage.source:null,checkedClubs:Array.isArray(p.coverage.checkedClubs)?p.coverage.checkedClubs.filter(x=>typeof x==="string"&&/^54\d{5}$/.test(x)).slice(0,100):[]}:null,errors:Array.isArray(p.errors)?p.errors.filter(x=>typeof x==="string").slice(0,100):[]};
+    previews[key]={session,rows:p.rows.map(normalizeCenter),savedAt:typeof p.savedAt==="string"?p.savedAt:null,reasons:Array.isArray(p.reasons)?p.reasons.filter(x=>typeof x==="string"):[],coverage:p.coverage&&typeof p.coverage.signature==="string"?{verified:p.coverage.verified===true,signature:p.coverage.signature,source:typeof p.coverage.source==="string"?p.coverage.source:null,checkedClubs:Array.isArray(p.coverage.checkedClubs)?p.coverage.checkedClubs.filter(x=>typeof x==="string"&&/^54\d{5}$/.test(x)).slice(0,100):[]}:null,errors:Array.isArray(p.errors)?p.errors.filter(x=>typeof x==="string").slice(0,100):[]};
   }
-  return {completedSessions:input.completedSessions,rows:input.rows,previews,savedAt:typeof input.savedAt==="string"?input.savedAt:null};
+  return {completedSessions:input.completedSessions,rows:input.rows.map(normalizeCenter),previews,savedAt:typeof input.savedAt==="string"?input.savedAt:null};
 }
 export function withPreview(snapshot,preview,now=new Date().toISOString()){
   const current=readSnapshot(snapshot);
