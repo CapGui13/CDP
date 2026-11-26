@@ -14,7 +14,7 @@ export function readSnapshot(input) {
         seen.add(player.license);
       }
     }
-    previews[key]={session,rows:p.rows,savedAt:typeof p.savedAt==="string"?p.savedAt:null,reasons:Array.isArray(p.reasons)?p.reasons.filter(x=>typeof x==="string"):[]};
+    previews[key]={session,rows:p.rows,savedAt:typeof p.savedAt==="string"?p.savedAt:null,reasons:Array.isArray(p.reasons)?p.reasons.filter(x=>typeof x==="string"):[],coverage:p.coverage&&typeof p.coverage.signature==="string"?{verified:p.coverage.verified===true,signature:p.coverage.signature,source:typeof p.coverage.source==="string"?p.coverage.source:null}:null,errors:Array.isArray(p.errors)?p.errors.filter(x=>typeof x==="string").slice(0,100):[]};
   }
   return {completedSessions:input.completedSessions,rows:input.rows,previews,savedAt:typeof input.savedAt==="string"?input.savedAt:null};
 }
