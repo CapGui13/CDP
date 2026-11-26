@@ -11,7 +11,7 @@ self.addEventListener("fetch",event=>{
  const key=new URL(url.pathname,url.origin).href;
  event.respondWith((async()=>{
   const cache=await caches.open(CACHE);
-  try{const response=await fetch(req);if(response.ok&&response.type==="basic")await cache.put(key,response.clone());return response;}
+  try{const response=await fetch(req,{cache:"no-cache"});if(response.ok&&response.type==="basic"){try{await cache.put(key,response.clone());}catch{}}return response;}
   catch(e){const cached=await cache.match(key);if(!cached)throw e;if(url.pathname.endsWith("/data/published.json")){const headers=new Headers(cached.headers);headers.set("X-CDP-Offline","1");return new Response(await cached.blob(),{status:200,headers});}return cached;}
  })());
 });
