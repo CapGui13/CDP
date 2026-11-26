@@ -11,6 +11,7 @@ import * as provisional from "../src/provisional.mjs";
 import * as publication from "../src/publication.mjs";
 import * as query from "../src/query-import.mjs";
 import * as details from "../src/qualification-details.mjs";
+import * as rankingTools from "../src/ranking-tools.mjs";
 const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const storeKey="cdp-2027-normalized-v1";
 function element(value=""){
@@ -18,16 +19,16 @@ function element(value=""){
   replaceChildren(...children){this.children=children;this.options=children;},
   append(...children){this.children.push(...children);},
   add(child){this.options.push(child);},
-  addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}
+  addEventListener(event,fn){this["on"+event]=fn;},showModal(){this.open=true;},close(){this.open=false;}
  };
 }
 function boot(storage,client,{published=null,acceptToken=true}={}){
  const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],element()]));
- for(const [id,value] of Object.entries({view:"all",center:"",search:"",session:"1",sessionId:"364548",page:"1",pageSize:"80",route:"results",email:"test@example.invalid",password:"test"}))elements.get(id).value=value;
+ for(const [id,value] of Object.entries({view:"all",center:"",search:"",qualFilter:"all",sortKey:"rank",sortDirection:"asc",session:"1",sessionId:"364548",page:"1",pageSize:"80",route:"results",email:"test@example.invalid",password:"test"}))elements.get(id).value=value;
  const document={getElementById:id=>elements.get(id),createElement:()=>element()};
  const Option=function(text,value){this.text=text;this.value=value;};
  const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))};
- const modules={"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
+ const modules={"ranking-tools.mjs":rankingTools,"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
@@ -111,4 +112,22 @@ test("fiche de paire cliquable : rangs, seuil, participation et fermeture",async
  assert.equal(fields[0].textContent,"Rang général");assert.equal(fields[1].textContent,"1 / 3");
  assert.ok(fields.some(x=>x.textContent==="1 / 6 · 3 restante(s) pour atteindre 4"));
  e.get("pairClose").onclick();assert.equal(e.get("pairDialog").open,false);
+});
+
+test("filtres et tri cliquable : conservation des rangs et reset",async()=>{
+ const rows=Array.from({length:3},(_,i)=>({session:1,center:"A",score:70-i,players:[{license:"a"+i,name:"Exemple A"+i,series:"3P"},{license:"b"+i,name:"Exemple B"+i,series:"3P"}]}));
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1],rows,previews:{},savedAt:"2026-11-26T20:00:00Z"},()=>String(++i));
+ const e=boot(new Map(),null,{published});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ e.get("qualFilter").value="direct";e.get("qualFilter").onchange();assert.equal(e.get("ranking").children.length,0);
+ e.get("resetFilters").onclick();assert.equal(e.get("ranking").children.length,3);
+ e.get("sort-average").onclick();assert.equal(e.get("ranking").children[0].children[0].children[0].textContent,1);
+ e.get("sort-average").onclick();assert.equal(e.get("ranking").children[0].children[0].children[0].textContent,3);
+ e.get("mobileView").onclick();assert.ok(e.get("rankingTable").className.includes("mobile-full"));
+ e.get("ranking").children[0].children[1].children[1].onclick();
+ const sim=e.get("pairDetails").children.find(x=>x.className==="pair-simulator");
+ const grid=sim.children.find(x=>x.className==="sim-grid");
+ grid.children[0].children[0].value="80";
+ sim.children.find(x=>x.textContent==="Calculer la simulation").onclick();
+ assert.ok(sim.children.find(x=>x.className==="sim-output").textContent.includes("74,00 %"));
 });
