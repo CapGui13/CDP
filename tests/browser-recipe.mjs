@@ -20,7 +20,7 @@ try{
  await page.locator("#racePlayers").click();await page.locator("#raceDetails input").fill("ros");assert.ok(await page.locator("#raceDetails tbody tr").count()>0);await page.locator("#raceClose").click();
  await page.locator("#raceBulletin").click();assert.ok((await page.locator("#raceDetails textarea").inputValue()).includes("Bilan S"));await page.locator("#raceClose").click();
  await page.locator("#raceSimulation").click();const form=page.locator("#raceDetails .race-scenario").first();
- await form.getByLabel("Type",{exact:true}).selectOption("new");await form.getByLabel("Nombre de paires").fill("2");await page.getByRole("button",{name:"Recalculer le scénario"}).click();
+ await form.getByLabel("Type de résultat",{exact:true}).selectOption("new");await form.getByLabel("Nombre de paires").fill("2");await page.getByRole("button",{name:"Recalculer le scénario"}).click();
  assert.ok(await page.getByRole("heading",{name:"Résultats du scénario"}).isVisible());assert.ok(await page.getByRole("heading",{name:"Quotas recalculés"}).isVisible());await page.locator("#raceClose").click();
  assert.equal(await page.locator("#ranking tr").count(),count);
  const downloadPromise=page.waitForEvent("download");await page.locator("#raceExcel").click();const dl=await downloadPromise;await dl.saveAs("browser-report/classement.xlsx");execFileSync("unzip",["-t","browser-report/classement.xlsx"]);
