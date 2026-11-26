@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CDP · Coupe de Provence 2027</title><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#111a28"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CDP · Coupe de Provence 2027</title><link rel="canonical" href="https://capgui13.github.io/CDP/"><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#111a28"><link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
 :root {
   color-scheme: dark;
@@ -305,7 +305,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <script type="module">
 import {createRaceUI} from "./src/race-ui.mjs?v=1";
 import {matchesSearch} from "./src/race-tools.mjs?v=1";
-import {createSportUI} from "./src/sport-ui.mjs?v=2";
+import {createSportUI} from "./src/sport-ui.mjs?v=canonical1";
 import {rankingHistory,qualificationFilter,sortRanking,simulatePair} from "./src/ranking-tools.mjs?v=1";
 import {qualificationDetails,qualificationReason} from "./src/qualification-details.mjs?v=1";
 import {connectPublisher} from "./src/github-publish.mjs?v=1";
@@ -645,6 +645,17 @@ for(const key of sortKeys.slice(0,13))$("sort-"+key).onclick=()=>changeSort(key)
 $("resetFilters").onclick=()=>{sportUI?.reset();$("view").value="all";$("center").value="";$("search").value="";$("qualFilter").value="all";sortKey="rank";sortDirection="asc";$("sortKey").value=sortKey;$("sortDirection").value=sortDirection;render();};
 $("mobileView").onclick=()=>{mobileExpanded=!mobileExpanded;render();};
 $("savedView").onchange=()=>{aggregatePreview=$("savedView").value==="aggregate";pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
+// Une seule adresse de navigation. Les anciens paramètres de partage sont lus
+// une fois, puis retirés de la barre d'adresse sans recharger la page.
+function normalizeEntryAddress(loc,nav){
+ if(!loc?.href||!nav?.replaceState)return null;
+ const url=new URL(loc.href);
+ const pair=url.searchParams.get("paire");
+ const path=url.pathname.replace(/\/index\.html$/,"/").replace(/\/CDP$/,"/CDP/");
+ if(url.search||url.hash||path!==url.pathname)nav.replaceState(nav.state,"",path);
+ return pair;
+}
+const incomingPair=normalizeEntryAddress(globalThis.location,globalThis.history);
 function showPublic(snapshot){
  state=snapshot||emptyState();result=validate(state);publicMode=true;
  aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);render();
@@ -655,7 +666,7 @@ async function loadPublic(){
   if(!response.ok)throw Error("Publication indisponible");
   const next=readPublicSnapshot(await response.json());validate(next);
   if(requestId!==publicLoad||publisher)return;
-  publishedCache=next;publicError=next.rows.length?(response.headers?.get?.('X-CDP-Offline')==='1'?'Hors connexion · dernière publication conservée sur cet appareil.':''):"Aucun résultat publié pour le moment.";showPublic(next);sportUI?.openShared();
+  publishedCache=next;publicError=next.rows.length?(response.headers?.get?.('X-CDP-Offline')==='1'?'Hors connexion · dernière publication conservée sur cet appareil.':''):"Aucun résultat publié pour le moment.";showPublic(next);sportUI?.openShared(incomingPair);
  }catch(e){if(requestId===publicLoad&&!publisher){publicError="Classement public momentanément indisponible. Actualise la page.";render();}}
 }
 $("manageOpen").onclick=()=>{if(unlocking||publisher)return;$("manageStatus").textContent="";$("githubToken").value="";$("manageDialog").showModal();};
