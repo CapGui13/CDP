@@ -39,3 +39,15 @@ test("rang à égalité et seuil indéterminé : pas de départage par licence",
  const r=computeRanking([row("a",1,60),row("b",1,60)],{completedSessions:[1],capacity:1,minimum:0,directPlaces:0});
  for(const p of r.ranking){const d=qualificationDetails(r,p);assert.equal(p.rank,1);assert.equal(d.categoryRank,1);assert.equal(d.boundary,null);assert.equal(p.status,"cutoff-tie");assert.equal(qualificationFilter(p,"uncertain",d),true);}
 });
+
+test("minimum par centre incompatible avec le plafond : aucune fausse exclusion",()=>{
+ const r=computeRanking([row("a",1,65,"A"),row("b",1,60,"B")],{completedSessions:[1],capacity:3,minimum:2,directPlaces:0});
+ assert.equal(r.finals.find(f=>f.finale===2).quotas,null);
+ for(const p of r.ranking){assert.equal(p.status,"quota-uncertain");assert.equal(qualificationDetails(r,p).quotaMin,null);}
+});
+test("changement de centre à égalité et participation devenue impossible",()=>{
+ const r=computeRanking([row("a",1,60,"A"),row("a",2,65,"B"),row("b",1,80,"A")],{completedSessions:[1,2]});
+ const a=byId(r,"a");assert.equal(a.center,null);assert.equal(a.status,"center-ambiguous");assert.equal(qualificationDetails(r,a).localRank,null);
+ const late=computeRanking([row("b",1,80)],{completedSessions:[1,2,3,4,5]});
+ assert.equal(late.ranking[0].status,"impossible");
+});
