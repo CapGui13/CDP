@@ -1,7 +1,7 @@
 import {pairRef,pairIndex,sportOverview,centerDetails,sessionRanking,scoreObjectives,pairSeries} from "./sport-dashboard.mjs";
 import {rankingHistory,isProjected} from "./ranking-tools.mjs";
 import {computeRanking} from "./ranking.mjs";
-export function createSportUI({document,storage,getState,openPair,render,pairDisplay,statuses}){
+export function createSportUI({document,storage,getState,openPair,render,pairDisplay,statuses,OptionCtor=globalThis.Option}){
  const $=id=>document.getElementById(id);
  const el=(tag,cls="",value="")=>{const n=document.createElement(tag);n.className=cls;n.textContent=value;return n;};
  const pct=n=>Number.isFinite(n)?n.toFixed(2).replace(".",",")+" %":"—";
@@ -19,7 +19,7 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
  function show(title){$("sportTitle").textContent=title;const body=$("sportDetails");body.replaceChildren();if(!$("sportDialog").open)$("sportDialog").showModal();return body;}
  function button(label,fn,cls="secondary"){const b=el("button",cls,label);b.type="button";b.onclick=fn;return b;}
  function pairButton(p){return button((isProjected(p)?"🏆 ":"")+pairDisplay(p.players),()=>{$("sportDialog").close();openPair(p);},"pair-name-link");}
- function fill(select,options,placeholder){const current=select.value;select.replaceChildren(new Option(placeholder,""));for(const [v,label] of options)select.add(new Option(label,v));select.value=options.some(x=>String(x[0])===current)?current:"";}
+ function fill(select,options,placeholder){const current=select.value;select.replaceChildren(new OptionCtor(placeholder,""));for(const [v,label] of options)select.add(new OptionCtor(label,v));select.value=options.some(x=>String(x[0])===current)?current:"";}
  function openCenter(center){
   const {state,result,publisher}=getState();if(!center||publisher)return;const d=centerDetails(state.rows,result,center);if(!d)return;
   const body=show(center),metrics=el("div","season-stats");metrics.append(metric("Paires distinctes",d.pairs),metric("Tables moyennes",d.averageTables===null?"—":d.averageTables.toFixed(1)),metric("Score moyen",pct(d.average)),metric("Paires rattachées",d.assigned),metric("Dans la projection",d.projected));body.append(metrics);
@@ -30,7 +30,7 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
  function openPerformances(){
   const {state,result,publisher}=getState(),n=Number($("performanceSession").value);if(publisher||!result.completedSessions.includes(n))return;
   const body=show("Performances de la séance "+n),center=el("select"),category=el("select");
-  center.add(new Option("Tous les centres",""));for(const c of stats.byCenter)center.add(new Option(c.center,c.center));category.add(new Option("Toutes catégories","all"));category.add(new Option("Finale 1","1"));category.add(new Option("Finale 2","2"));
+  center.add(new OptionCtor("Tous les centres",""));for(const c of stats.byCenter)center.add(new OptionCtor(c.center,c.center));category.add(new OptionCtor("Toutes catégories","all"));category.add(new OptionCtor("Finale 1","1"));category.add(new OptionCtor("Finale 2","2"));
   const actions=el("div","sport-actions");actions.append(center,category);body.append(actions);const content=el("div");body.append(content);
   const update=()=>{const ranked=sessionRanking(state.rows,result,n,center.value||"",category.value||"all");content.replaceChildren(el("p","muted",ranked.length+" paires · rang de la séance au général"),table(["Rang S"+n,"Paire","Centre de jeu","Score","Rang cumulé actuel"],ranked.map(x=>[x.rank,pairButton(x.pair),x.row.center,pct(x.row.score),x.pair.rank])));};
   center.onchange=category.onchange=update;update();
@@ -39,8 +39,8 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
  }
  function openComparison(){
   const {result,detailMap,publisher}=getState();if(publisher)return;const body=show("Comparer les paires");
-  const selected=[...comparison].map(k=>index.get(k)).filter(Boolean);const pick=el("select");pick.add(new Option("Ajouter une paire",""));
-  for(const p of result.ranking){const key=pairRef(p);if(index.get(key)===p&&!comparison.has(key))pick.add(new Option(pairDisplay(p.players),key));}
+  const selected=[...comparison].map(k=>index.get(k)).filter(Boolean);const pick=el("select");pick.add(new OptionCtor("Ajouter une paire",""));
+  for(const p of result.ranking){const key=pairRef(p);if(index.get(key)===p&&!comparison.has(key))pick.add(new OptionCtor(pairDisplay(p.players),key));}
   const add=button("Ajouter",()=>{if(pick.value&&index.get(pick.value)&&comparison.size<4){comparison.add(pick.value);openComparison();render();}});add.disabled=selected.length>=4;
   const actions=el("div","sport-actions");actions.append(pick,add);body.append(actions);
   for(const p of selected)body.append(button("Retirer "+pairDisplay(p.players),()=>{comparison.delete(pairRef(p));openComparison();render();}));
