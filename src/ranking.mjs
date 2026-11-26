@@ -43,7 +43,7 @@ export function computeRanking(rows, options = {}) {
   ranking.sort((a,b)=>compare(a,b)||a.key.localeCompare(b.key));
   ranking.forEach((p,i)=>{p.rank=i&&compare(p,ranking[i-1])===0?ranking[i-1].rank:i+1;if(!p.possible)p.status="impossible";else if(!p.center)p.status="center-ambiguous";});
   function select(candidates, limit, route) {
-    if(limit<=0)return {selected:[],ties:[]};
+    if(limit<=0)return {selected:[],ties:[],tiePlaces:0};
     const sorted=candidates.filter(p=>p.possible).sort(compare);
     const boundary=sorted.length>limit&&compare(sorted[limit-1],sorted[limit])===0?sorted[limit-1]:null;
     const selected=[],ties=[];
@@ -51,7 +51,7 @@ export function computeRanking(rows, options = {}) {
       if(boundary&&compare(p,boundary)===0) {p.status="cutoff-tie";p.route=route;ties.push(p);}
       else if(i<limit){p.status=p.eligible?"provisional":"conditional";p.route=route;selected.push(p);}
     });
-    return {selected,ties};
+    return {selected,ties,tiePlaces:boundary?Math.max(0,limit-selected.length):0};
   }
   const finals=[];
   for(const finale of [1,2]){
@@ -77,7 +77,7 @@ export function computeRanking(rows, options = {}) {
     for(const e of entries){
       const candidates=ranking.filter(p=>p.finale===finale&&p.center===e.center&&!p.route);
       if(direct.ties.length||e.quotaUncertain){for(const p of candidates.filter(p=>p.possible))p.status="quota-uncertain";e.local=null;}
-      else {const local=select(candidates,e.quota,"center");e.local=local.selected.map(p=>p.key);e.ties=local.ties.map(p=>p.key);e.vacant=Math.max(0,e.quota-local.selected.length-local.ties.length);}
+      else {const local=select(candidates,e.quota,"center");e.local=local.selected.map(p=>p.key);e.ties=local.ties.map(p=>p.key);e.tiePlaces=local.tiePlaces;e.vacant=Math.max(0,e.quota-local.selected.length-local.tiePlaces);}
       const participation=[...rows].filter(r=>r.center===e.center).length;
       e.averageTables=completed.size?participation/(2*completed.size):null;
       e.minimumTablesReached=e.averageTables!==null&&e.averageTables>=7;
