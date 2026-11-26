@@ -180,6 +180,8 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 .quota-table td,.quota-table th{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
 .quota-table td:first-child,.quota-table th:first-child{text-align:left}
 .quota-table .warning{color:#ffcf97}
+
+.quota-scroll{overflow-x:auto}.quota-table{min-width:820px}.quota-table th{white-space:normal}.quota-table td:not(:first-child){white-space:nowrap}.quota-up{color:#8deac3}.quota-down{color:#ffb5c0}.cdp-table td:nth-child(6),.cdp-table td:nth-child(n+8){white-space:nowrap}
 </style></head>
 <body class="compact-view">
 <header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
@@ -187,7 +189,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel rankings-panel"><div class="panel-head"><div><h2>Classement des paires</h2><p class="panel-subtitle">Moyenne des quatre meilleurs pourcentages · Qualification provisoire</p></div><div class="panel-meta"><span id="overview" class="meta-item">Aucune séance importée</span></div></div>
 <div class="controls"><div class="fields filters-row"><label>Classement<select id="view" class="input"><option value="all">Général</option><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Centre<select id="center" class="input"><option value="">Tous les centres</option></select></label><label>Recherche<input id="search" class="input" type="search" placeholder="Rechercher un joueur ou un n° FFB"></label></div></div>
 <div class="table-zone"><div class="table-wrap"><table class="cdp-table"><thead><tr><th>Rang</th><th>Paire</th><th>Centre</th><th>Finale</th><th>Jouées</th><th>Moyenne</th><th>Qualification</th><th>S1<span class="date-caption">25/11</span></th><th>S2<span class="date-caption">27/01</span></th><th>S3<span class="date-caption">24/02</span></th><th>S4<span class="date-caption">24/03</span></th><th>S5<span class="date-caption">14/04</span></th><th>S6<span class="date-caption">05/05</span></th></tr></thead><tbody id="ranking"></tbody></table></div><div class="empty-state" id="empty"><strong>Aucun résultat à afficher</strong><span>Connecte-toi à la FFB pour récupérer les résultats.</span></div><div class="table-foot"><span>Les scores retenus sont en vert menthe. Projections non officielles.</span><span class="category-legend"><span><i class="cat-swatch cat1"></i>Cat. 1 · 2C ou +</span><span><i class="cat-swatch cat2"></i>Cat. 2</span><span><i class="cat-swatch cat-unknown"></i>Catégorie inconnue</span></span></div></div>
-<div class="quota-area"><details><summary>Quotas et alertes réglementaires</summary><div id="quotas"></div></details></div></section>
+<div class="quota-area"><details><summary>Quotas prévisionnels par centre et évolution</summary><div id="quotas"></div></details></div></section>
 <section class="panel"><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
 <div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
 <dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog>
@@ -205,13 +207,14 @@ import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1"
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
-import {computeRanking} from "./src/ranking.mjs?v=real-s1";
+import {computeRanking,compareQuotaStages} from "./src/ranking.mjs?v=quota-history1";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=real-s1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
 let pendingPreview=null,publicMode=false,aggregatePreview=false;
 const discovered=new Map([[1,364548]]);
+let quotaComparisonCache=null,quotaComparisonResult=null;
 let api=null,busy=false,state={completedSessions:[],rows:[],previews:{},savedAt:null},result=null;
 const storage="cdp-2027-normalized-v1";
 const schemaStorage="cdp-2027-result-schema-v1";
@@ -263,7 +266,7 @@ function updateArchive(){
  $("savedInfo").textContent=publicMode?"Classement public · lecture seule · "+(state.savedAt?new Date(state.savedAt).toLocaleString("fr-FR"):"aucune publication") : state.savedAt?"Sauvegarde locale : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · "+state.completedSessions.length+" séance(s) validée(s) · "+entries.length+" aperçu(s)":"Aucune collecte sauvegardée.";
 }
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
-const statuses={provisional:"Dans le quota",conditional:"Qualifiable sous condition",outside:"Hors quota",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
+const statuses={provisional:"Dans la projection",conditional:"Dans la projection · séances requises",outside:"Hors projection",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
 function render(){
  result=result||validate(state);
  updateArchive();
@@ -297,15 +300,36 @@ function render(){
  const tr=document.createElement("tr");tr.className="player-row category-"+p.finale+" q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);tr.append(rankCell);td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,(statuses[p.status]||p.status)+(p.route?" · "+(p.route==="direct"?"directe":"centre"):""),p.status==="provisional"?"qualified":p.status==="conditional"?"conditional":"");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
  }
  $("quotas").replaceChildren();
- for(const f of result.finals){
+ if(!result.completedSessions.length){$("quotas").textContent="Aucune séance validée : pas encore de projection de quotas.";return;}
+ if(quotaComparisonResult!==result){quotaComparisonCache=compareQuotaStages(state.rows,result);quotaComparisonResult=result;}
+ const evolution=quotaComparisonCache;
+ const info=document.createElement("p");info.className="muted";
+ info.textContent="Projection sur "+evolution.sessions.length+"/6 séances validées (S"+evolution.sessions.join(", S")+"). "+(evolution.previousSessions.length?"Évolution comparée au cumul S"+evolution.previousSessions.join(", S")+".":"Première estimation : pas encore d’évolution à comparer.")+" Les quotas et la moyenne de tables sont recalculés à chaque import ; le Comité confirme les qualifications.";
+ $("quotas").append(info);
+ const range=(min,max)=>min===null?"—":min===max?String(min):min+" à "+max;
+ const signed=n=>n>0?"+"+n:n<0?"−"+Math.abs(n):"0";
+ for(const f of evolution.finals){
   const h=document.createElement("p");
   const count=f.direct.length+(f.quotas||[]).reduce((sum,q)=>sum+(q.local?.length??0),0);
   h.textContent="Finale "+f.finale+" · "+count+" paires dans la projection sur "+f.capacity+" places maximum"+(f.reserved?" · "+f.reserved+" places directes réservées":"");
   $("quotas").append(h);
+  if(!f.quotas){const note=document.createElement("p");note.className="warning";note.textContent="Répartition locale non calculable avec les contraintes actuelles."; $("quotas").append(note);continue;}
+  const allocation=document.createElement("p");allocation.className="muted";
+  allocation.textContent=f.localMin+" places locales réparties"+(f.unassigned?" · "+f.unassigned+(f.unresolvedRemainder?" à départager (quotas en fourchette)":" non réparties"):"")+".";
+  $("quotas").append(allocation);
+  const wrap=document.createElement("div");wrap.className="quota-scroll";
   const table=document.createElement("table");table.className="quota-table";
-  const head=document.createElement("tr");for(const label of ["Centre","Participations cat.","Tables moy.","Quota local","Places non pourvues"]){const th=document.createElement("th");th.textContent=label;head.append(th);}table.append(head);
-  for(const q of f.quotas||[]){const tr=document.createElement("tr");td(tr,q.center);td(tr,q.weight);td(tr,q.averageTables==null?"—":q.averageTables.toLocaleString("fr-FR",{maximumFractionDigits:2}),q.minimumTablesReached?"":"warning");td(tr,q.quotaUncertain?q.quota+" à "+(q.quotaMax??q.quota+1):q.quota,q.quotaUncertain?"warning":"");td(tr,Number.isInteger(q.vacant)?q.vacant:"—");table.append(tr);}
-  $("quotas").append(table);
+  const head=document.createElement("tr");for(const label of ["Centre","Participations cat. cumulées","Tables moy. toutes cat.","Quota local prévisionnel","Quota précédent","Évolution","Places locales vacantes (min.)"]){const th=document.createElement("th");th.textContent=label;head.append(th);}table.append(head);
+  for(const q of f.quotas){
+   const tr=document.createElement("tr");td(tr,q.center);td(tr,q.weight);
+   td(tr,q.averageTables==null?"—":q.averageTables.toLocaleString("fr-FR",{maximumFractionDigits:2}),q.minimumTablesReached?"":"warning");
+   td(tr,range(q.quotaMin,q.quotaMax),q.quotaUncertain?"warning":"");
+   td(tr,range(q.priorMin,q.priorMax));
+   const delta=q.delta;
+   td(tr,q.newCenter?"Nouveau":delta?(delta.min===delta.max?signed(delta.min):signed(delta.min)+" à "+signed(delta.max)):"—",delta?(delta.min>0?"quota-up":delta.max<0?"quota-down":delta.min!==delta.max?"warning":""):"");
+   td(tr,Number.isInteger(q.vacant)?q.vacant:"—");table.append(tr);
+  }
+  wrap.append(table);$("quotas").append(wrap);
  }
  for(const w of result.warnings){const d=document.createElement("p");d.className="warning";d.textContent=w;$("quotas").append(d);}
 }
