@@ -52,6 +52,19 @@ La PWA utilise un manifeste, une icône vectorielle et un service worker avec pr
 
 Recette du lot : 11 tests ciblés exécutés dans le harnais JavaScript simulé, dont 6 scénarios d'interface et 5 tests de statistiques. Contrôle de S1 : 346 paires, 692 joueurs, 16 centres, 60 projections F1 et 58 F2, 2 cas incertains F2. La paire 26 nécessite 60,38 % sur trois séances futures ou 60,22 % sur quatre/cinq, pour dépasser le seuil local actuel de 60,21 %. Les données publiées et le moteur de qualification n'ont pas été modifiés.
 
+## Course à la finale
+
+- Participation : condition de quatre séances ensemble, nombre d'absences encore possibles et impossibilité mathématique de remplir cette condition. Ces indicateurs ne prédisent pas la qualification sportive.
+- Recherche publique tolérante aux accents, inversion des mots, fautes simples et transpositions ; les identifiants FFB ne sont jamais exposés dans la vue publique.
+- Parcours individuels : toutes les séances et tous les partenaires d'un même joueur, moyenne personnelle sans valeur qualificative, matrice des changements de partenaire. L'identité individuelle utilise le pseudonyme public stable dans la publication courante.
+- Classements annexes : écart-type sur au moins trois séances, progression depuis la première séance, records de score, assiduité et trois meilleures paires comportant un joueur de chaque série. Une paire mixte peut apparaître dans deux séries.
+- Comparaison des centres : participation cumulée, évolution des tables estimées, joueurs distincts, premières séries, moyenne des scores et quotas. Bulletin sportif modifiable et copiable, généré à partir de la dernière séance validée.
+- Simulateur global : résultats futurs de paires réelles et lots fictifs, recalcul intégral du moteur, changements de statuts et de quotas. Chaque séance simulée est considérée terminée : les autres paires y sont absentes. Les lots fictifs créent de nouvelles paires distinctes à chaque ligne, sans continuité implicite. Aucune hypothèse n'est enregistrée ni publiée.
+- Préparation de la finale : verrouillée tant que les six séances ne sont pas validées. Listes de projection, réserves potentielles par centre et places vacantes ; suivi personnel local des confirmations et forfaits, sans attribution automatique ni communication au Comité.
+- Export XLSX natif du classement filtré et trié, avec scores numériques et chaînes littérales, sans licence ni données privées.
+- Recette : 7 scénarios d'interface simulée et 7 tests métier ciblés (dont vérification de la structure ZIP/XLSX), contrôles des 346 paires réelles. Charge synthétique : 6 000 résultats, 1 000 paires, 2 000 joueurs et 16 centres ; classement calculé en environ 52 ms et statistiques en 264 ms dans le harnais JavaScript. Ces durées sont indicatives, hors rendu DOM.
+- Le workflow `.github/workflows/browser.yml` lance Chromium/Playwright et axe, vérifie les dialogues, la simulation, l'export et les vues mobile/clair/sombre. Il publie un rapport d'accessibilité, une capture mobile et un export de test. L'exécution native et les éventuelles violations axe restent à vérifier ; aucun audit WCAG complet n'est revendiqué.
+
 ## Tests
 
 `node --test tests/*.test.mjs`
