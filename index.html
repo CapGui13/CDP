@@ -175,7 +175,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Résultats normalisés conservés dans le navigateur</p></div></div><div class="panel-inner"><div class="actions"><button id="save" class="secondary">Exporter les séances</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
-import {makeFfbClient} from "./src/ffb-browser.mjs";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-auth2";
 import {computeRanking} from "./src/ranking.mjs";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
