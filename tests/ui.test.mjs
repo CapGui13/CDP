@@ -12,6 +12,7 @@ import * as publication from "../src/publication.mjs";
 import * as query from "../src/query-import.mjs";
 import * as details from "../src/qualification-details.mjs";
 import * as rankingTools from "../src/ranking-tools.mjs";
+import * as sportUI from "../src/sport-ui.mjs";
 const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const storeKey="cdp-2027-normalized-v1";
 function element(value=""){
@@ -25,10 +26,10 @@ function element(value=""){
 function boot(storage,client,{published=null,acceptToken=true}={}){
  const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],element()]));
  for(const [id,value] of Object.entries({view:"all",center:"",search:"",qualFilter:"all",sortKey:"rank",sortDirection:"asc",session:"1",sessionId:"364548",page:"1",pageSize:"80",route:"results",email:"test@example.invalid",password:"test"}))elements.get(id).value=value;
- const document={getElementById:id=>elements.get(id),createElement:()=>element()};
+ const document={getElementById:id=>elements.get(id),createElement:()=>element(),documentElement:{dataset:{}}};
  const Option=function(text,value){this.text=text;this.value=value;};
  const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))};
- const modules={"ranking-tools.mjs":rankingTools,"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
+ const modules={"sport-ui.mjs":{createSportUI:config=>sportUI.createSportUI({...config,OptionCtor:Option})},"ranking-tools.mjs":rankingTools,"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
@@ -130,4 +131,26 @@ test("filtres et tri cliquable : conservation des rangs et reset",async()=>{
  grid.children[0].children[0].value="80";
  sim.children.find(x=>x.textContent==="Calculer la simulation").onclick();
  assert.ok(sim.children.find(x=>x.className==="sim-output").textContent.includes("74,00 %"));
+});
+
+test("tableau de bord, favoris, comparaison et fiche centre",async()=>{
+ const rows=Array.from({length:3},(_,i)=>({session:1,center:i===2?"B":"A",score:70-i,players:[{license:"a"+i,name:"Exemple A"+i,series:"3P"},{license:"b"+i,name:"Exemple B"+i,series:"3P"}]}));
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1],rows,previews:{},savedAt:"2026-11-26T20:00:00Z"},()=>String(++i)),storage=new Map();
+ const e=boot(storage,null,{published});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(e.get("seasonStats").children[0].children[1].textContent,"3");
+ assert.equal(e.get("seasonDates").children.length,6);
+ e.get("ranking").children[0].children[1].children[1].onclick();
+ const actions=e.get("pairDetails").children.find(x=>x.className==="sport-actions");
+ actions.children[0].onclick();actions.children[1].onclick();
+ assert.ok(storage.get("cdp-2027-view-preferences").includes("exemple"));
+ e.get("pairClose").onclick();
+ e.get("favoritesOnly").onclick();assert.equal(e.get("ranking").children.length,1);
+ e.get("resetFilters").onclick();assert.equal(e.get("ranking").children.length,3);
+ e.get("ranking").children[1].children[1].children[1].onclick();
+ e.get("pairDetails").children.find(x=>x.className==="sport-actions").children[1].onclick();e.get("pairClose").onclick();
+ e.get("compareOpen").onclick();assert.equal(e.get("sportDialog").open,true);assert.ok(e.get("sportDetails").children.some(x=>x.className==="sport-table-wrap"));
+ e.get("sportClose").onclick();e.get("statsCenter").value="A";e.get("centerStatsOpen").onclick();assert.equal(e.get("sportTitle").textContent,"A");
+ e.get("sportClose").onclick();e.get("performanceSession").value="1";e.get("performanceOpen").onclick();assert.equal(e.get("sportTitle").textContent,"Performances de la séance 1");
+ e.get("themeSwitch").onclick();assert.ok(storage.get("cdp-2027-view-preferences").includes("light"));
 });
