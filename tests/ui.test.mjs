@@ -84,13 +84,15 @@ test("page unique : cache privé inaccessible à l'affichage avant token, retour
  assert.equal(storage.get(storeKey),local);
 });
 
-test("signes de qualification : projection directe ou locale, égalités et hors projection",()=>{
+
+test("coupe avant les noms : projection directe ou locale, égalités et hors projection",()=>{
  const source=html.slice(html.indexOf("const statuses="),html.indexOf("function render(){"));
- const cell=new Function("document",source+"\nreturn qualificationCell;")({createElement:()=>element()});
- for(const [status,route,expected,label] of [["conditional","direct","✓","Directe"],["provisional","center","✓","Par centre"],["quota-uncertain",null,"?","Quota incertain"],["cutoff-tie","center","?","Ex æquo"],["center-ambiguous",null,"?","Centre ambigu"],["outside",null,null,"Hors projection"],["impossible",null,null,"Non qualifiable"]]){
-  const tr=element();cell(tr,{status,route,count:1});
-  const children=tr.children[0].children;
-  assert.equal(children.find(c=>c.className.includes("qualification-mark"))?.textContent??null,expected);
-  assert.equal(children.at(-1).textContent,label);
+ const cells=new Function("document","pairDisplay",source+"\nreturn {pairCell,qualificationCell};")({createElement:()=>element()},players=>players.map(p=>p.name).join(" / "));
+ for(const [status,route,expected,label] of [["conditional","direct","🏆","Directe"],["provisional","center","🏆","Par centre"],["quota-uncertain",null,"?","Quota incertain"],["cutoff-tie","center","?","Ex æquo"],["center-ambiguous",null,"?","Centre ambigu"],["outside",null,"","Hors projection"],["impossible",null,"","Non qualifiable"]]){
+  const tr=element(),p={status,route,count:1,players:[{name:"A"},{name:"B"}]};
+  cells.pairCell(tr,p);cells.qualificationCell(tr,p);
+  assert.equal(tr.children[0].children[0].textContent,expected);
+  assert.equal(tr.children[0].children[1].textContent,"A / B");
+  assert.equal(tr.children[1].children[0].textContent,label);
  }
 });
