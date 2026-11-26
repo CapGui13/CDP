@@ -187,7 +187,7 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=clubs2";
-import {collectClubCenters,discoverClubDirectory,seedClubs} from "./src/club-centers.mjs?v=1";
+import {collectTargetedCenters} from "./src/club-centers.mjs?v=2";
 import {discoverSessions,collectCommitteePeople,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=2";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
@@ -345,28 +345,22 @@ async function syncOne(c,client,{centersOnly=false}={}){
    // Ne jamais appliquer de nouveaux rattachements si le contrôle croisé échoue.
    const work=rows.map(r=>({...r}));
    try{
-     let report=await collectClubCenters(client,c.id,work,seedClubs,({done,total})=>message("FFB · centres de jeu : "+done+"/"+total+" clubs interrogés…"));
-     if(report.verified&&report.remaining>0&&!report.conflicts){
-       try{
-         const directory=await discoverClubDirectory(client,({page,clubs})=>message("FFB · annuaire des clubs : "+clubs+" codes, page "+page+"…"));
-         const extra=Object.fromEntries(Object.entries(directory).filter(([code])=>!Object.hasOwn(seedClubs,code)));
-         if(Object.keys(extra).length){
-           const more=await collectClubCenters(client,c.id,work,extra,({done,total})=>message("FFB · clubs complémentaires : "+done+"/"+total+"…"),report.observations);
-           report={...more,errors:[...report.errors,...more.errors]};
-         }
-       }catch(e){centerNote=" Annuaire complémentaire : "+e.message;}
-     }
+     const report=await collectTargetedCenters(client,c.id,work,({done,total,assigned,pairs})=>{
+       for(let i=0;i<rows.length;i++){rows[i].center=work[i].center;rows[i].centerCode=work[i].centerCode;}
+       if(done%3===0||done===total)saveProgress();
+       message("FFB · centres : "+done+"/"+total+" clubs contrôlés · "+assigned+"/"+pairs+" paires rattachées.");
+     });
      if(report.verified&&!report.conflicts){
        for(let i=0;i<rows.length;i++){rows[i].center=work[i].center;rows[i].centerCode=work[i].centerCode;}
        // Une réponse directe non paginée et son partitionnement exhaustif par club constituent le contrôle de couverture.
-       if(total===null&&direct&&Array.isArray(payload)&&report.remaining===0&&report.errors.length===0)total=raw.length;
-       centerNote=(rows.length-report.remaining)+"/"+rows.length+" paires rattachées à un centre · "+report.clubs+" clubs confirmés."+centerNote;
+       if(total===null&&direct&&Array.isArray(payload)&&report.complete&&report.remaining===0&&report.errors.length===0)total=raw.length;
+       centerNote=(rows.length-report.remaining)+"/"+rows.length+" paires rattachées à un centre · "+report.clubs+" clubs confirmés."+(report.unnamed.length?" Codes sans libellé officiel : "+report.unnamed.join(", ")+".":"")+centerNote;
      }else centerNote="Filtre club non confirmé : "+(report.errors[0]?.message|| (report.conflicts?"chevauchement entre clubs":"moins de deux clubs distincts"))+". Aucun rattachement nouveau appliqué.";
      if(report.errors.length&&report.verified)centerNote+=" "+report.errors.length+" requête(s) club non exploitables.";
      saveProgress();
    }catch(e){centerNote="Centres : "+(e.message||"échec de collecte");}
  }
- if(!centersOnly&&rows.some(r=>r.players.some(p=>!p.series))){
+ if(!centersOnly&&rows.flatMap(r=>r.players).filter(p=>!p.series&&!p.personId).length>0){
   try{
    const current=await client.currentSeason();
    if(Number(current?.id)!==38)throw Error("Saison fédérale non confirmée.");
@@ -390,7 +384,7 @@ async function syncOne(c,client,{centersOnly=false}={}){
        }));
        if(i%20===0||done===todo.length)saveProgress();
        message("FFB : séries récupérées "+found+" · "+done+"/"+todo.length+" fiches consultées.");
-       if(done>=8&&found===0){lookupNote=lookupNote||"Aucune série ni IV reconnu dans les premières fiches.";break;}
+
      }
      saveProgress();
    }catch(e){lookupNote=e.message||"Enrichissement impossible";}
