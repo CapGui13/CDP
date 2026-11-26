@@ -1,0 +1,19 @@
+{
+  "name": "Coupe de Provence – Ranking",
+  "short_name": "CDP",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090f19",
+  "theme_color": "#111a28",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
