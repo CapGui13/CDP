@@ -1,10 +1,10 @@
 // Les champs d'identité et de score reprennent le lecteur Ranking E-Open V9.3.
 // Le centre organisateur et la série sont exigés pour calculer les qualifications.
 export function readRanking(payload){
- const candidates=[payload,payload?.data,payload?.ranking,payload?.pairs,payload?.results,payload?.data?.ranking,payload?.data?.pairs,payload?.data?.results,payload?.data?.items,payload?.items];
+ const candidates=[payload,payload?.data,payload?.ranking,payload?.pairs,payload?.results,payload?.data?.ranking,payload?.data?.pairs,payload?.data?.results,payload?.data?.items,payload?.items,payload?.content,payload?.data?.content];
  const rows=candidates.find(Array.isArray);
  if(!rows||!rows.length)throw Error("La FFB n'a pas renvoyé de liste de paires exploitable.");
- const totals=[payload?.total,payload?.totalCount,payload?.totalItems,payload?.data?.total,payload?.pagination?.total,payload?.meta?.total].filter(x=>x!=null);
+ const totals=[payload?.total,payload?.totalCount,payload?.totalItems,payload?.data?.total,payload?.pagination?.total_items,payload?.pagination?.totalItems,payload?.pagination?.total,payload?.meta?.total].filter(x=>x!=null);
  if(totals.some(t=>!Number.isSafeInteger(Number(t))||Number(t)<rows.length))throw Error("Total FFB incohérent.");
  return {rows,total:totals.length?Number(totals[0]):null};
 }
@@ -25,7 +25,7 @@ const ivSeries={100:"1N",92:"1P",84:"1C",76:"1K",68:"1T",60:"2PR",56:"2P",52:"2C
 export function extractSeries(p){
  const explicit=[p?.series,p?.serie,p?.seriesLabel,p?.ranking?.series,p?.iv?.series,p?.iv?.label,p?.iv?.classification,p?.classification?.label,p?.person?.series,p?.person?.iv?.series].map(seriesCode).find(Boolean);
  if(explicit)return explicit;
- const v=[p?.iv?.iv,p?.iv?.value,p?.iv,p?.valueIndex,p?.indiceValeur,p?.person?.iv?.iv,p?.person?.iv].find(x=>(typeof x==="number"||typeof x==="string")&&String(x).trim()!==""&&Object.hasOwn(ivSeries,Number(x)));
+ const v=[p?.iv?.iv,p?.iv?.value,p?.iv,p?.valueIndex,p?.indiceValeur,p?.person?.iv?.iv,p?.person?.iv,p?.season?.ranking?.iv?.iv,p?.season?.ranking?.iv,p?.ranking?.iv?.iv,p?.ranking?.iv].find(x=>(typeof x==="number"||typeof x==="string")&&String(x).trim()!==""&&Object.hasOwn(ivSeries,Number(x)));
  return v==null?null:ivSeries[Number(v)];
 }
 export function normalizeFfbRanking(rows,session){
@@ -46,7 +46,7 @@ export function normalizeFfbRanking(rows,session){
   const raw=first(row.sessionScore,row.score,row.percentage,row.percent);
   const score=Number(String(raw??"").replace("%","").trim().replace(",","."));
   if(raw==null||!Number.isFinite(score)||score<0||score>100)throw Error("Score invalide à la paire "+(i+1)+".");
-  const center=[row.center,row.organizingCenter,row.sessionCenter,row.hostClub,row.organizingClub,row.organizerClub,row.clubName,team.center,team.organizingClub,team.hostClub].map(label).find(Boolean)||null;
+  const center=[row.center,row.centre,row.organizingCenter,row.sessionCenter,row.hostClub,row.organizingClub,row.organizerClub,row.clubName,row.tournamentClub,row.tournament?.club,row.localTournament?.club,row.localSession?.club,row.clubSession?.club,row.result?.tournament?.club,row.section?.tournament?.club,team.center,team.organizingClub,team.hostClub].map(label).find(Boolean)||null;
   if(!center)missing.center++;
   return {session,score,players,center,ffbRank:Number(row.rank)||null};
  });
