@@ -278,13 +278,13 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 :root{--muted:#a9bbcd}.date-caption{color:#a9bbcd}.qualification-other{color:#b6cadd}.pair-name-link:focus-visible,.sort-head:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 [data-theme="light"] .date-caption,[data-theme="light"] .qualification-other{color:#52697d}
 
-/* Séries séparées des noms, lettres de couleur en quatre teintes. */
+/* Séries séparées des noms : symboles de cartes en quatre teintes. */
 .pair-series{display:inline-block;margin-left:14px;white-space:nowrap;font-size:11px;font-weight:650;letter-spacing:0;color:var(--muted);vertical-align:baseline}
-.series-separator{opacity:.7}.series-suit{font-weight:800}
-.series-suit.suit-P{color:#dce7f3}.series-suit.suit-C{color:#ff858e}.series-suit.suit-K{color:#85c1ff}.series-suit.suit-T{color:#7eddb1}
-[data-theme="light"] .series-suit.suit-P{color:#263747}[data-theme="light"] .series-suit.suit-C{color:#ae253b}[data-theme="light"] .series-suit.suit-K{color:#155a9d}[data-theme="light"] .series-suit.suit-T{color:#176b45}
+.series-separator{opacity:.7}.series-suit{font-weight:800;font-family:"Segoe UI Symbol","DejaVu Sans",Arial,sans-serif;font-variant-emoji:text;font-size:1.13em}
+.series-suit.suit-P{color:#000;text-shadow:-.65px 0 #e7edf5,.65px 0 #e7edf5,0 -.65px #e7edf5,0 .65px #e7edf5}.series-suit.suit-C{color:#ff626b}.series-suit.suit-K{color:#ffac52}.series-suit.suit-T{color:#60abff}
+[data-theme="light"] .series-suit.suit-P{color:#000;text-shadow:none}[data-theme="light"] .series-suit.suit-C{color:#c21e35}[data-theme="light"] .series-suit.suit-K{color:#b75a00}[data-theme="light"] .series-suit.suit-T{color:#125bbb}
 @media(max-width:720px){.pair-series{margin-left:9px;font-size:10px}.cdp-table.mobile-compact .pair-series{display:block;margin-left:24px;margin-top:3px}}
-@media print{.pair-series{color:#333!important;margin-left:8px;font-size:7.5pt}.series-suit{color:inherit!important}}
+@media print{.pair-series{color:#333!important;margin-left:8px;font-size:7.5pt}.series-suit{color:inherit!important;text-shadow:none}}
 </style></head>
 <body class="compact-view">
 <header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="themeSwitch" class="secondary" type="button">Thème clair</button><button id="installApp" class="secondary" type="button">Installer</button><button id="manageOpen" class="secondary" type="button">Gestion</button><button id="manageClose" class="secondary" type="button" hidden>Fermer la gestion</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
@@ -315,7 +315,7 @@ import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
-import {pairDisplay,pairDisplayWithSeries,orderedPlayers,seriesDisplay,displayCategory} from "./src/presentation.mjs?v=series1";
+import {pairDisplay,pairDisplayWithSeries,orderedPlayers,seriesDisplay,displayCategory} from "./src/presentation.mjs?v=series3";
 import {computeRanking,compareQuotaStages} from "./src/ranking.mjs?v=quota-history1";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=real-s1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
@@ -390,13 +390,12 @@ function appendPairSeries(cell,players){
  ordered.forEach((p,i)=>{
   if(i){const sep=document.createElement("span");sep.className="series-separator";sep.textContent=" / ";group.append(sep);}
   const code=document.createElement("span");code.className="series-code";
-  const label=seriesDisplay(p.series),raw=label==="Série inconnue"?"?":p.series;
+  const label=seriesDisplay(p.series),raw=label==="Série inconnue"?"?":p.series.replace(/H$/,"");
   code.title=p.formatted.display+" : "+label;
-  const suit=raw.match(/^([1-4])([PCKT])(H?)$/);
+  const suit=raw.match(/^([1-4])([PCKT])$/);
   if(suit){
    const number=document.createElement("span"),letter=document.createElement("span");
-   number.textContent=suit[1];letter.className="series-suit suit-"+suit[2];letter.textContent=suit[2];code.append(number,letter);
-   if(suit[3]){const suffix=document.createElement("span");suffix.textContent=suit[3];code.append(suffix);}
+   number.textContent=suit[1];letter.className="series-suit suit-"+suit[2];letter.textContent=({P:"♠",C:"♥",K:"♦",T:"♣"})[suit[2]]+"\uFE0E";code.append(number,letter);
   }else code.textContent=raw;
   group.append(code);
  });
