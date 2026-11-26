@@ -3,7 +3,26 @@ const DEFAULT_PROXY='https://ranking-stalking-proxy.vercel.app';
 const MAX_ATTEMPTS=4;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 class ApiError extends Error {
-  constructor(status, context) { super(`${context}: HTTP ${status}`); this.status = status; }
+  constructor(status, context, code = "") {
+    const explanations = {
+      INVALID_LOGIN_CREDENTIALS: "Adresse e-mail ou mot de passe refusé par la FFB.",
+      INVALID_PASSWORD: "Mot de passe FFB incorrect.",
+      EMAIL_NOT_FOUND: "Adresse e-mail inconnue de la FFB.",
+      USER_DISABLED: "Compte FFB désactivé.",
+      TOO_MANY_ATTEMPTS_TRY_LATER: "Trop de tentatives. Réessaie plus tard.",
+      API_KEY_INVALID: "Configuration Firebase FFB invalide.",
+      API_KEY_HTTP_REFERRER_BLOCKED: "Origine CDP non autorisée par la configuration Firebase FFB.",
+      OPERATION_NOT_ALLOWED: "Connexion par mot de passe non autorisée.",
+      MISSING_PASSWORD: "Mot de passe manquant.",
+      INVALID_EMAIL: "Adresse e-mail non valide.",
+      CAPTCHA_CHECK_FAILED: "Vérification de sécurité Firebase refusée.",
+      MISSING_RECAPTCHA_TOKEN: "La FFB exige une vérification reCAPTCHA.",
+      INVALID_RECAPTCHA_TOKEN: "Vérification reCAPTCHA invalide."
+    };
+    super(context + ": HTTP " + status + (code ? " · " + code : "") + (explanations[code] ? " — " + explanations[code] : ""));
+    this.status = status;
+    this.code = code;
+  }
 }
 
 export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl = fetch, proxy = DEFAULT_PROXY, pause = wait }) {
@@ -17,7 +36,18 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetchImpl(url, { ...opts, signal: AbortSignal.timeout(30000) });
-        if (!res.ok) throw new ApiError(res.status, context);
+        if (!res.ok) {
+          let code = "";
+          // Only disclose machine-readable error identifiers, never raw bodies or credentials.
+          if (context === "Authentification FFB" || context === "Renouvellement FFB") {
+            try {
+              const payload = await res.json();
+              const candidate = payload?.error?.details?.find(d => typeof d?.reason === "string")?.reason || payload?.error?.message || "";
+              code = /^[A-Z][A-Z0-9_]{2,79}(?:$|\s*[:.])/.exec(candidate)?.[0]?.replace(/[\s:.]+$/, "") || "";
+            } catch {}
+          }
+          throw new ApiError(res.status, context, code);
+        }
         return await res.json();
       } catch (e) {
         last = e;
