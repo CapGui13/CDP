@@ -87,6 +87,24 @@ export function computeRanking(rows, options = {}) {
           const border=possible[e.quota];
           e.extraCandidates=border?possible.filter(p=>!p.route&&compare(p,border)===0).map(p=>{p.status="quota-uncertain";return p.key;}):[];
         }
+        // Un rattachement indéterminé ne doit pas créer de qualification locale certaine.
+        // On compare au pire cas (toutes les paires ambiguës rattachées ici) sans les
+        // attribuer arbitrairement à un centre. Une égalité compte comme un risque.
+        const known=candidates.filter(p=>p.possible);
+        const ambiguous=ranking.filter(p=>p.finale===finale&&p.possible&&!p.center&&!p.route&&p.candidateCenters.includes(e.center));
+        const affected=ambiguous.filter(p=>known.filter(x=>compare(x,p)<0).length<(e.quotaMax??e.quota));
+        if(affected.length){
+          e.centerCandidates=affected.map(p=>p.key);
+          const risk=local.selected.filter(p=>[...known,...ambiguous].filter(x=>x.key!==p.key&&compare(x,p)<=0).length>=e.quota);
+          if(risk.length){
+            const keys=new Set(risk.map(p=>p.key));
+            e.centerRisk=risk.map(p=>p.key);
+            e.local=e.local.filter(key=>!keys.has(key));
+            for(const p of risk){p.status="quota-uncertain";p.route=null;}
+          }
+          if(e.vacant>0)e.vacant=null;
+          warnings.push("Finale "+finale+" · "+e.center+" : le rattachement de "+affected.length+" paire(s) peut modifier la frontière locale.");
+        }
       }
       const participation=[...rows].filter(r=>r.center===e.center).length;
       e.averageTables=completed.size?participation/(2*completed.size):null;
