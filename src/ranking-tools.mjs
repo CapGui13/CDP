@@ -1,5 +1,5 @@
-import {computeRanking} from "./ranking.mjs";
-import {qualificationDetails} from "./qualification-details.mjs";
+import {computeRanking} from "./ranking.mjs?v=season-audit1";
+import {qualificationDetails} from "./qualification-details.mjs?v=season-audit1";
 export const isProjected=p=>["conditional","provisional"].includes(p.status);
 export const isUncertain=p=>["center-ambiguous","cutoff-tie","quota-uncertain"].includes(p.status);
 export function rankingHistory(rows,current){
