@@ -1,0 +1,37 @@
+{
+  "season": "2026-2027",
+  "simultaneousId": 12,
+  "sessions": [
+    {
+      "number": 1,
+      "date": "2026-11-25",
+      "ffbId": 364548
+    },
+    {
+      "number": 2,
+      "date": "2027-01-27",
+      "ffbId": null
+    },
+    {
+      "number": 3,
+      "date": "2027-02-24",
+      "ffbId": null
+    },
+    {
+      "number": 4,
+      "date": "2027-03-24",
+      "ffbId": null
+    },
+    {
+      "number": 5,
+      "date": "2027-04-14",
+      "ffbId": null
+    },
+    {
+      "number": 6,
+      "date": "2027-05-05",
+      "ffbId": null
+    }
+  ],
+  "finaleDate": "2027-06-23"
+}
