@@ -83,3 +83,14 @@ test("page unique : cache privé inaccessible à l'affichage avant token, retour
  assert.ok(pub.get("ranking").children[0].children.some(c=>String(c.textContent).includes("72,00")));
  assert.equal(storage.get(storeKey),local);
 });
+
+test("signes de qualification : projection directe ou locale, égalités et hors projection",()=>{
+ const source=html.slice(html.indexOf("const statuses="),html.indexOf("function render(){"));
+ const cell=new Function("document",source+"\nreturn qualificationCell;")({createElement:()=>element()});
+ for(const [status,route,expected,label] of [["conditional","direct","✓","Directe"],["provisional","center","✓","Par centre"],["quota-uncertain",null,"?","Quota incertain"],["cutoff-tie","center","?","Ex æquo"],["center-ambiguous",null,"?","Centre ambigu"],["outside",null,null,"Hors projection"],["impossible",null,null,"Non qualifiable"]]){
+  const tr=element();cell(tr,{status,route,count:1});
+  const children=tr.children[0].children;
+  assert.equal(children.find(c=>c.className.includes("qualification-mark"))?.textContent??null,expected);
+  assert.equal(children.at(-1).textContent,label);
+ }
+});
