@@ -13,7 +13,7 @@ const label=value=>typeof value==="string"?value.trim():typeof value?.name==="st
 const valid=new Set(["1N","1P","1C","1K","1T","2P","2C","2K","2T","3P","3C","3K","3T","4P","4C","4K","4T","NC"]);
 export function seriesCode(value){
  const raw=typeof value==="string"?value:label(value);
- const s=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+ const s=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/Œ/g,"OE").trim();
  if(valid.has(s))return s;
  const m=s.match(/^([1-4])(?:ERE|RE|EME|E)?\s*(?:SERIE\s*)?([NPKCT]|NATIONAL(?:E)?|PIQUES?|COEURS?|CARREAUX?|TREFLES?|[♠♥♦♣])$/);
  if(!m)return null;
