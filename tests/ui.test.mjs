@@ -20,7 +20,7 @@ function element(value=""){
   addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}
  };
 }
-function boot(storage,client){
+function boot(storage,client,{search='',published=null}={}){
  const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],element()]));
  for(const [id,value] of Object.entries({view:"all",center:"",search:"",session:"1",sessionId:"364548",page:"1",pageSize:"80",route:"results",email:"test@example.invalid",password:"test"}))elements.get(id).value=value;
  const document={getElementById:id=>elements.get(id),createElement:()=>element()};
@@ -31,7 +31,7 @@ function boot(storage,client){
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
  const values=imports.flatMap(m=>m[1].split(",").map(x=>modules[m[2]][x.trim()]));
- new Function("document","Option","localStorage","fetch","AbortController","setTimeout","clearTimeout",...names,script.replace(/^import .*$/gm,""))(document,Option,localStorage,async()=>({ok:false}),AbortController,setTimeout,clearTimeout,...values);
+ new Function("document","Option","localStorage","fetch","AbortController","setTimeout","clearTimeout","location","URLSearchParams",...names,script.replace(/^import .*$/gm,""))(document,Option,localStorage,async()=>published?({ok:true,json:async()=>published}):({ok:false}),AbortController,setTimeout,clearTimeout,{search},URLSearchParams,...values);
  return elements;
 }
 test("interface : sauvegarde existante, connexion, centres, séries, classement puis rechargement",async()=>{
@@ -54,4 +54,24 @@ test("interface : sauvegarde existante, connexion, centres, séries, classement 
  assert.equal($("ranking").children.length,4);assert.ok($("message").textContent.includes("Séance validée"));
  const reloaded=boot(storage,client);
  assert.equal(reloaded.get("ranking").children.length,4);assert.ok(reloaded.get("overview").textContent.includes("1 / 6"));
+});
+
+test("lien public indépendant du cache local, gestion masquée et sauvegarde intacte",async()=>{
+ const row={session:1,center:"A",score:60,players:[{license:"100",name:"Exemple A",series:"3P"},{license:"101",name:"Exemple B",series:"3P"}]};
+ const privateData={completedSessions:[1],rows:[row],previews:{},savedAt:"2026-11-26T20:00:00Z"};
+ const local=JSON.stringify(privateData),storage=new Map([[storeKey,local]]);
+ let i=0;const published=publication.publicSnapshot({...privateData,rows:[{...row,score:72}]},()=>String(++i));
+ const pub=boot(storage,null,{search:"?public=1",published});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(pub.get("syncPanel").hidden,true);
+ assert.equal(pub.get("storagePanel").hidden,true);
+ assert.equal(pub.get("adminLink").hidden,false);
+ assert.equal(pub.get("ranking").children.length,1);
+ assert.ok(pub.get("ranking").children[0].children.some(c=>String(c.textContent).includes("72,00")));
+ assert.equal(storage.get(storeKey),local);
+ const admin=boot(storage,null,{search:"?admin=1",published});
+ assert.equal(admin.get("syncPanel").hidden,false);
+ assert.equal(admin.get("storagePanel").hidden,false);
+ assert.ok(admin.get("ranking").children[0].children.some(c=>String(c.textContent).includes("60,00")));
+ assert.equal(storage.get(storeKey),local);
 });
