@@ -140,7 +140,31 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     registration,
     sessions: (id,currentPage=1,maxPerPage=80) => call('www', `api/competitions/simultaneous/${id}/sessions`, {currentPage,maxPerPage}),
     fullSessionRanking: id => call('www', `api/results/sessions/${id}/ranking`),
-    clubSessionRanking: (id,club) => call('www', `api/results/sessions/${id}/ranking`, {club}),
+    // Paramètres confirmés dans Network de la page officielle FFB.
+    clubSessionRanking: async (id,club) => {
+      const pageSize=80, collected=[], signatures=new Set();
+      let expected=null;
+      for(let page=1;page<=100;page++){
+        const data=await call('www', `api/results/sessions/${id}/ranking`, {simultaneousId:club,paginate:true,currentPage:page,maxPerPage:pageSize});
+        const list=Array.isArray(data)?data:[data?.items,data?.results,data?.content,data?.ranking,data?.pairs,data?.data,data?.data?.items,data?.data?.results,data?.data?.content,data?.data?.ranking].find(Array.isArray);
+        if(!list)throw Error("Classement du club : format FFB inconnu.");
+        const total=data?.pagination?.total_items??data?.pagination?.totalItems??data?.pagination?.total??data?.total??data?.totalItems??data?.totalCount??data?.data?.total;
+        if(total!=null){
+          const n=Number(total);
+          if(!Number.isSafeInteger(n)||n<0||(expected!==null&&expected!==n))throw Error("Total du club incohérent.");
+          expected=n;
+        }
+        const signature=JSON.stringify(list);
+        if(list.length&&signatures.has(signature))throw Error("Pagination du club répétée.");
+        signatures.add(signature);collected.push(...list);
+        if(expected!==null){
+          if(collected.length>expected)throw Error("Trop de résultats pour ce club.");
+          if(collected.length===expected)return {items:collected,total:expected};
+          if(!list.length)throw Error("Pagination du club incomplète.");
+        }else if(list.length<pageSize)return {items:collected};
+      }
+      throw Error("Limite de pagination du club atteinte.");
+    },
     sessionRanking: (id, currentPage=1, maxPerPage=80, route='results') => { if (!['results','competitions'].includes(route)) throw Error('Route invalide'); return call('www', `api/${route}/sessions/${id}/ranking`, {paginate:true,currentPage,maxPerPage}); }
   };
 }
