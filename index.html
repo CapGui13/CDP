@@ -168,6 +168,18 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 .category-legend>span{display:inline-flex;align-items:center;gap:5px}
 .cat-swatch{display:inline-block;width:11px;height:11px;border:1px solid #6f8399;border-radius:3px}
 .cat1{background:#503b56;border-color:#bf97c1}.cat2{background:#235441;border-color:#72c6aa}.cat-unknown{background:#172536}
+
+/* Scores lisibles sans césure et qualifications plus compactes. */
+.cdp-table td:nth-child(6),.cdp-table td:nth-child(n+8){white-space:nowrap;word-break:normal;overflow-wrap:normal;font-variant-numeric:tabular-nums}
+.cdp-table td:nth-child(n+8),.cdp-table th:nth-child(n+8){min-width:64px}
+.cdp-table td:nth-child(6){min-width:86px}
+.cdp-table td:nth-child(3){min-width:125px}
+.cdp-table td:nth-child(7){min-width:140px}
+.cdp-table{min-width:1250px!important}
+.quota-table{width:100%;margin:12px 0 20px;font-size:12px;border-collapse:collapse}
+.quota-table td,.quota-table th{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+.quota-table td:first-child,.quota-table th:first-child{text-align:left}
+.quota-table .warning{color:#ffcf97}
 </style></head>
 <body class="compact-view">
 <header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
@@ -187,14 +199,14 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
-import {syncSession} from "./src/session-sync.mjs?v=audit3";
+import {syncSession} from "./src/session-sync.mjs?v=real-s1";
 import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
-import {computeRanking} from "./src/ranking.mjs?v=audit1";
-import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=audit2";
+import {computeRanking} from "./src/ranking.mjs?v=real-s1";
+import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=real-s1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
@@ -285,7 +297,16 @@ function render(){
  const tr=document.createElement("tr");tr.className="player-row category-"+p.finale+" q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);tr.append(rankCell);td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,(statuses[p.status]||p.status)+(p.route?" · "+(p.route==="direct"?"directe":"centre"):""),p.status==="provisional"?"qualified":p.status==="conditional"?"conditional":"");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
  }
  $("quotas").replaceChildren();
- for(const f of result.finals){const h=document.createElement("p");h.textContent="Finale "+f.finale+" · "+f.reserved+" place(s) directe(s) réservée(s)";$("quotas").append(h);for(const q of f.quotas||[]){const d=document.createElement("div");d.textContent=q.center+" : "+q.quota+" place(s)"+(q.quotaUncertain?" (quota incertain)":"")+(Number.isInteger(q.vacant)?" · "+q.vacant+" vacante(s)":"");$("quotas").append(d);}}
+ for(const f of result.finals){
+  const h=document.createElement("p");
+  const count=f.direct.length+(f.quotas||[]).reduce((sum,q)=>sum+(q.local?.length??0),0);
+  h.textContent="Finale "+f.finale+" · "+count+" paires dans la projection sur "+f.capacity+" places maximum"+(f.reserved?" · "+f.reserved+" places directes réservées":"");
+  $("quotas").append(h);
+  const table=document.createElement("table");table.className="quota-table";
+  const head=document.createElement("tr");for(const label of ["Centre","Participations cat.","Tables moy.","Quota local","Places non pourvues"]){const th=document.createElement("th");th.textContent=label;head.append(th);}table.append(head);
+  for(const q of f.quotas||[]){const tr=document.createElement("tr");td(tr,q.center);td(tr,q.weight);td(tr,q.averageTables==null?"—":q.averageTables.toLocaleString("fr-FR",{maximumFractionDigits:2}),q.minimumTablesReached?"":"warning");td(tr,q.quotaUncertain?q.quota+" à "+(q.quotaMax??q.quota+1):q.quota,q.quotaUncertain?"warning":"");td(tr,Number.isInteger(q.vacant)?q.vacant:"—");table.append(tr);}
+  $("quotas").append(table);
+ }
  for(const w of result.warnings){const d=document.createElement("p");d.className="warning";d.textContent=w;$("quotas").append(d);}
 }
 function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
