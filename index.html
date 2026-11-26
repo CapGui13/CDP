@@ -187,14 +187,14 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
-import {syncSession} from "./src/session-sync.mjs?v=audit1";
+import {syncSession} from "./src/session-sync.mjs?v=audit2";
 import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit1";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
 import {computeRanking} from "./src/ranking.mjs?v=audit1";
-import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=audit1";
+import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=audit2";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
@@ -314,7 +314,8 @@ async function syncOne(c,client,{centersOnly=false}={}){
  message("S"+c.session+" : récupération du classement général…");
  const cache=publicMode?[]:[...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)];
  const previousCoverage=publicMode?null:state.previews[c.session]?.coverage;
- const report=await syncSession({client,session:c.session,id:c.id,cache,previousCoverage,centersOnly,signal:operation?.signal,
+ const previousCount=publicMode?0:Math.max(state.rows.filter(r=>r.session===c.session).length,state.previews[c.session]?.rows.length??0);
+ const report=await syncSession({client,session:c.session,id:c.id,cache,previousCoverage,previousCount,centersOnly,signal:operation?.signal,
  onRaw:payload=>{showRaw(payload,"classement");saveRankingSchema(payload,c.session,c.id);},
  onCheckpoint:preview=>{startLocal();storePreview(preview);},
  onProgress:text=>message("S"+c.session+" · "+text)});
@@ -356,7 +357,7 @@ $("preview").onclick=run(async()=>{const c=config(),raw=at(rawPayload(),$("listP
 $("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);startLocal();commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");});
 $("save").onclick=()=>download("cdp-2027-seances.json",state);
 $("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length&&!Object.keys(state.previews).length)throw Error("Aucun résultat collecté.");download("published.json",publicSnapshot(state));message("Fichier public préparé. Dépose-le dans data/published.json sur GitHub pour rendre le classement consultable.");});
-$("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
+$("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());if(next?.schema==="cdp-public-v1")throw Error("Cette publication publique ne peut pas remplacer les données de travail privées.");const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
 for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
 $("savedView").onchange=()=>{aggregatePreview=$("savedView").value==="aggregate";pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
 try{const cached=localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
