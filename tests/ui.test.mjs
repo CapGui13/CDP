@@ -178,3 +178,17 @@ test("course finale : recherche tolérante, joueurs, bulletin, scénario, finale
  e.get("raceClose").onclick();e.get("raceSimulation").onclick();assert.equal(e.get("raceTitle").textContent,"Simulateur global des qualifications");
  e.get("raceClose").onclick();e.get("raceFinal").onclick();assert.ok(e.get("raceDetails").children[0].textContent.includes("six séances"));
 });
+
+test("adresse canonique : anciens liens de version, index.html et partage",()=>{
+ const source=html.slice(html.indexOf("function normalizeEntryAddress("),html.indexOf("const incomingPair="));
+ const normalize=new Function(source+"\nreturn normalizeEntryAddress;")();
+ const base="https://capgui13.github.io/CDP/";
+ for(const [suffix,expected] of [["",null],["?v=series3",null],["index.html?v=ancienne#test",null],["?paire=exemple&v=1","exemple"],["#classement",null]]){
+  const calls=[],nav={state:{existing:true},replaceState(...args){calls.push(args);}};
+  assert.equal(normalize({href:base+suffix},nav),expected);
+  assert.equal(calls.length,suffix?1:0);
+  if(suffix)assert.deepEqual(calls[0],[nav.state,"","/CDP/"]);
+ }
+ assert.equal(normalize(undefined,undefined),null);
+ assert.ok(html.includes('rel="canonical" href="'+base+'"'));
+});
