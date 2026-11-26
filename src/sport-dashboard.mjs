@@ -1,6 +1,6 @@
-import {computeRanking} from "./ranking.mjs";
-import {qualificationDetails} from "./qualification-details.mjs";
-import {isProjected,isUncertain} from "./ranking-tools.mjs";
+import {computeRanking} from "./ranking.mjs?v=season-audit1";
+import {qualificationDetails} from "./qualification-details.mjs?v=season-audit1";
+import {isProjected,isUncertain} from "./ranking-tools.mjs?v=season-audit1";
 import {playerName} from "./presentation.mjs";
 const normalized=s=>String(s??"").normalize("NFC").trim().replace(/\s+/g," ").toLocaleLowerCase("fr");
 // Stable across regenerated public pseudonyms; ambiguous homonyms are deliberately not resolved.
