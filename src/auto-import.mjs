@@ -17,13 +17,16 @@ export function seriesCode(value){
  if(valid.has(s))return s;
  const hqAliases={NH:"1NH",PH:"1PH",CH:"1CH",KH:"1KH",TH:"1TH",PRH:"2PRH"};if(hqAliases[s])return hqAliases[s];
  const cleanHQ=s.replace(/\s*(?:HORS\s+QUOTA|HQ)\s*$/,"H");
+ const fullHQ=cleanHQ.match(/^([123])(?:ERE|RE|EME|E)?\s*(?:SERIE\s*)?(NATIONALE?|PIQUES?|COEURS?|CARREAUX?|TREFLES?|PROMOTION|MAJEURE)?\s*H$/);
+ if(fullHQ){const rank=fullHQ[1],label=fullHQ[2]||"";const kind=label.startsWith("NATIONAL")?"N":label.startsWith("PIQUE")?"P":label.startsWith("COEUR")?"C":label.startsWith("CARREAU")?"K":label.startsWith("TREFLE")?"T":label==="PROMOTION"?"PR":label==="MAJEURE"?"M":"";const code=rank+kind+"H";if(valid.has(code))return code;}
+ if(/^(?:NOUVEAU(?:\s+LICENCIE)?|NON\s+CLASSE)$/.test(s))return "NC";
  const aliases={"1N H":"1NH","1P H":"1PH","1C H":"1CH","1K H":"1KH","1T H":"1TH","2PR H":"2PRH","2 MAJEURE H":"2MH","2E MAJEUREH":"2MH"};if(aliases[cleanHQ])return aliases[cleanHQ];if(valid.has(cleanHQ))return cleanHQ;
  const m=s.match(/^([1-4])(?:ERE|RE|EME|E)?\s*(?:SERIE\s*)?([NPKCT]|PROMOTION|NATIONAL(?:E)?|PIQUES?|COEURS?|CARREAUX?|TREFLES?|[♠♥♦♣])$/);
  if(!m)return null;
  const suffix=({"♠":"P","♥":"C","♦":"K","♣":"T",PROMOTION:"PR",NATIONAL:"N",NATIONALE:"N",PIQUE:"P",PIQUES:"P",COEUR:"C",COEURS:"C",CARREAU:"K",CARREAUX:"K",TREFLE:"T",TREFLES:"T"})[m[2]]||m[2];
  return valid.has(m[1]+suffix)?m[1]+suffix:null;
 }
-// Barème IV FFB, catégories ordinaires. Les IV hors quota restent à confirmer par la série explicite.
+// Barème fédéral IV : séries ordinaires et hors quota ; ne jamais utiliser IC.
 const ivSeries={100:"1N",92:"1P",84:"1C",76:"1K",68:"1T",60:"2PR",56:"2P",52:"2C",48:"2K",44:"2T",40:"3PR",38:"3P",36:"3C",34:"3K",32:"3T",30:"4PR",28:"4P",26:"4C",24:"4K",22:"4T",20:"NC",96:"1NH",88:"1PH",80:"1CH",72:"1KH",64:"1TH",58:"2PRH",50:"2MH",42:"2H",31:"3H"};
 export function extractSeries(p){
  const explicit=[p?.series,p?.classification,p?.iv?.seriesLabel,p?.iv?.name,p?.iv?.code,p?.iv?.abbreviation,p?.season?.ranking?.series,p?.serie,p?.seriesLabel,p?.ranking?.series,p?.iv?.series,p?.iv?.label,p?.iv?.classification,p?.classification?.label,p?.person?.series,p?.person?.iv?.series].map(seriesCode).find(Boolean);
