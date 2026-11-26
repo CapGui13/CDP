@@ -12,8 +12,8 @@ export function mergeCache(rows,cache){
  for(const r of cache){pairs.set(r.session+":"+key(r),r);for(const p of r.players){const prev=people.get(p.license)||{};people.set(p.license,{...prev,...p,series:prev.series||p.series});}}
  for(const r of rows){
   const old=pairs.get(r.session+":"+key(r));
-  if(old?.centerVerified===true&&clubCode(r)&&String(old.centerCode)===clubCode(r)){r.center=directory[clubCode(r)]||old.center||"Centre "+clubCode(r);r.centerCode=clubCode(r);r.centerVerified=true;}
-  for(const p of r.players){const prev=people.get(p.license);if(!prev)continue;for(const k of ["series","personId","firstName","lastName"])if(!p[k]&&prev[k])p[k]=prev[k];}
+  if(old?.centerVerified===true&&((clubCode(r)&&String(old.centerCode)===clubCode(r))||(!clubCode(r)&&r.ffbclubnetId&&r.ffbclubnetId===old.ffbclubnetId))){const code=String(old.centerCode);r.center=directory[code]||old.center||"Centre "+code;r.centerCode=code;r.centerVerified=true;}
+  for(const p of r.players){const prev=people.get(p.license);if(!prev)continue;for(const k of ["series","personId","firstName","lastName","profileAttemptedAt"])if(!p[k]&&prev[k])p[k]=prev[k];}
  }
 }
 export async function syncSession({client,session,id,cache=[],previousCoverage=null,centersOnly=false,signal,onCheckpoint=()=>{},onProgress=()=>{},onRaw=()=>{},maxProfiles=80,maxClubs=40}){
@@ -38,7 +38,7 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
  const errors=[];const codes=new Map();
  for(const r of rows){const c=clubCode(r);if(c){if(!codes.has(c))codes.set(c,[]);codes.get(c).push(r);}}
  const allCoded=[...codes.values()].reduce((n,g)=>n+g.length,0)===rows.length;
- const signature=JSON.stringify(rows.map(r=>[key(r),clubCode(r)]).sort((a,b)=>a[0].localeCompare(b[0])));
+ const signature=JSON.stringify([id,rows.map(r=>[key(r),clubCode(r),r.ffbclubnetId]).sort((a,b)=>a[0].localeCompare(b[0]))]);
  let coverage=total===rows.length?"total FFB":null;
  if(!coverage&&previousCoverage?.signature===signature&&previousCoverage?.verified===true)coverage="couverture précédente";
  const reasons=()=>{const out=[];const missing=rows.filter(r=>!r.centerVerified).length;const unknown=rows.flatMap(r=>r.players).filter(p=>!p.series).length;if(missing)out.push(missing+" centres à confirmer");if(unknown)out.push(unknown+" séries manquantes");if(!coverage)out.push("exhaustivité FFB non confirmée");return out;};
@@ -61,21 +61,42 @@ export async function syncSession({client,session,id,cache=[],previousCoverage=n
    abort(signal);if(stop)throw stop;
   }
  }else{
-  // Sans codes exploitables, ne pas inventer de rattachement. Un diagnostic suffit.
-  errors.push("Codes simultaneousId absents ou non exploitables dans le général ; aucun balayage de l'annuaire.");
+  // Mode de secours : liste statique de clubs, pas d'annuaire ni de fiches de licenciés.
+  // Les rattachements ne sont publiés qu'après contrôle croisé de réponses disjointes.
+  const confirmed=new Map(),observations=[];
+  for(const r of rows.filter(r=>r.centerVerified))confirmed.set(key(r),String(r.centerCode));
+  const candidates=[...new Set([...codes.keys(),...Object.keys(seedClubs),...Object.keys(directory)])].filter(code=>!rows.some(r=>r.centerVerified&&String(r.centerCode)===code)).slice(0,Math.min(maxClubs,20));
+  let done=0,conflict=false;
+  for(let i=0;i<candidates.length;i+=3){abort(signal);
+   const batch=await Promise.all(candidates.slice(i,i+3).map(async code=>{try{return {code,keys:clubPairKeys(await client.clubSessionRanking(id,code),rows)};}catch(e){return {code,error:e};}}));
+   let stop=null;
+   for(const item of batch){done++;if(item.error){errors.push("Club "+item.code+" : "+item.error.message);if(fatal(item.error))stop=item.error;continue;}
+    if([...item.keys].some(k=>confirmed.has(k)&&confirmed.get(k)!==item.code)){conflict=true;errors.push("Rattachements contradictoires pour le club "+item.code);continue;}
+    for(const k of item.keys)confirmed.set(k,item.code);if(item.keys.size)observations.push(item.code);
+   }
+   onProgress("Centres (secours) : "+done+"/"+candidates.length+" clubs · "+confirmed.size+"/"+rows.length+" paires recoupées.");
+   abort(signal);if(stop)throw stop;if(conflict||confirmed.size===rows.length)break;
+  }
+  if(!conflict&&new Set(confirmed.values()).size>=2){
+   for(const r of rows){const code=confirmed.get(key(r));if(code){r.center=directory[code]||"Centre "+code;r.centerCode=code;r.centerVerified=true;}}
+   if(direct&&Array.isArray(payload)&&confirmed.size===rows.length)coverage=coverage||"partition filtrée confirmée";
+   checkpoint();
+  }
+  if(rows.some(r=>!r.centerVerified))errors.push("Centres restants non confirmés : le général ne contient pas tous les codes utilisables. Aucun balayage des licenciés.");
  }
  // Contrôle indépendant du total, sans télécharger tout le classement une seconde fois.
+ if(!coverage&&direct&&Array.isArray(payload)&&allCoded&&rows.every(r=>r.centerVerified))coverage="partition par codes confirmée";
  if(!coverage){abort(signal);try{const p=await client.sessionRanking(id,1,80,"results");const n=listTotal(p);if(n===rows.length)coverage="total FFB paginé";else if(n!==null)errors.push("Total FFB "+n+" différent des "+rows.length+" résultats.");}catch(e){abort(signal);if(fatal(e))throw e;errors.push("Total FFB : "+e.message);}checkpoint();}
  if(!centersOnly){
   const pending=rows.flatMap(r=>r.players).filter(p=>!p.series);
-  const todo=pending.filter(p=>p.personId).slice(0,maxProfiles);
+  const todo=pending.filter(p=>p.personId).sort((a,b)=>String(a.profileAttemptedAt??"").localeCompare(String(b.profileAttemptedAt??""))).slice(0,maxProfiles);
   if(pending.length>todo.length)errors.push((pending.length-todo.length)+" fiches non traitées (identifiant absent ou limite par passe).");
   if(todo.length){
    abort(signal);const season=await client.currentSeason();
    if(Number(season?.id)!==38)throw Error("Saison fédérale non confirmée : identifiant 38 attendu.");
    let done=0,found=0;
    for(let i=0;i<todo.length;i+=4){abort(signal);
-    const batch=await Promise.all(todo.slice(i,i+4).map(async p=>{try{const payload=await client.ranking(p.personId,38);const data=payload?.data??payload;const series=extractSeries(data);if(series){p.series=series;return {found:true};}const iv=data?.iv?.iv??data?.iv?.value??data?.iv;return {unknown:typeof iv==="number"||typeof iv==="string"?String(iv).slice(0,20):"absent"};}catch(e){return {error:e};}}));
+    const batch=await Promise.all(todo.slice(i,i+4).map(async p=>{p.profileAttemptedAt=new Date().toISOString();try{const payload=await client.ranking(p.personId,38);const data=payload?.data??payload;const series=extractSeries(data);if(series){p.series=series;return {found:true};}const iv=data?.iv?.iv??data?.iv?.value??data?.iv;return {unknown:typeof iv==="number"||typeof iv==="string"?String(iv).slice(0,20):"absent"};}catch(e){return {error:e};}}));
     let stop=null;for(const item of batch){done++;if(item.found)found++;else if(item.error){errors.push("Fiche : "+item.error.message);if(fatal(item.error))stop=item.error;}else if(item.unknown&&!errors.includes("IV non reconnu : "+item.unknown))errors.push("IV non reconnu : "+item.unknown);}
     checkpoint();onProgress("Séries : "+found+" nouvelles · "+done+"/"+todo.length+" fiches ciblées · "+rows.flatMap(r=>r.players).filter(p=>!p.series).length+" restantes.");
     abort(signal);if(stop)throw stop;
