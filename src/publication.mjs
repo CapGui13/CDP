@@ -4,7 +4,7 @@ import {readSnapshot} from "./persistence.mjs";
 export function publicSnapshot(snapshot,makeId=()=>crypto.randomUUID()){
  const src=readSnapshot(snapshot),ids=new Map();
  const idFor=license=>{if(!ids.has(license))ids.set(license,"public-"+makeId());return ids.get(license);};
- const stripRow=row=>({session:row.session,score:row.score,center:row.center??null,ffbRank:row.ffbRank??null,players:row.players.map(p=>({license:idFor(p.license),name:String(p.name||"Joueur"),firstName:p.firstName??"",lastName:p.lastName??"",series:p.series??null}))});
+ const stripRow=row=>({session:row.session,score:row.score,center:row.center??null,ffbRank:row.ffbRank??null,players:row.players.map(p=>({license:idFor(p.license),name:String(p.name&&String(p.name).trim()!==String(p.license) ? p.name : "Joueur"),firstName:p.firstName??"",lastName:p.lastName??"",series:p.series??null}))});
  return {schema:"cdp-public-v1",season:"2026-2027",...readSnapshot({completedSessions:src.completedSessions,rows:src.rows.map(stripRow),savedAt:src.savedAt,previews:Object.fromEntries(Object.entries(src.previews).map(([k,p])=>[k,{...p,rows:p.rows.map(stripRow)}]))})};
 }
 export function readPublicSnapshot(input){
