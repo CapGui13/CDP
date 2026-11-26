@@ -1,0 +1,11 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {at,arrayPaths,collectPages,normalizeRows} from "../src/query-import.mjs";
+const sample={items:[{club:"A",percentage:"63,25 %",pair:[{id:123,level:"1P",name:"A"},{id:456,level:"2C",name:"B"}]}],total:1};
+const mapping={center:"club",score:"percentage",license1:"pair.0.id",license2:"pair.1.id",series1:"pair.0.level",series2:"pair.1.level",name1:"pair.0.name",name2:"pair.1.name"};
+test("chemins imbriqués et détection de tableaux",()=>{assert.equal(at(sample,"items.0.pair.0.id"),123);assert.deepEqual(arrayPaths(sample),["items"]);});
+test("normalisation explicite sans supposer de schéma FFB",()=>{assert.deepEqual(normalizeRows(sample.items,1,mapping),[{session:1,center:"A",score:63.25,players:[{license:"123",series:"1P",name:"A"},{license:"456",series:"2C",name:"B"}]}]);});
+test("rejet d'une série manquante",()=>{assert.throws(()=>normalizeRows(sample.items,1,{...mapping,series1:"absent"}),/Champ absent/);});
+test("pagination exacte",async()=>{const result=await collectPages(async p=>({items:p===1?[1,2]:[3],total:3}),{listPath:"items",pageSize:2,totalPath:"total"});assert.deepEqual(result,[1,2,3]);});
+test("pagination répétée refusée",async()=>{await assert.rejects(collectPages(async()=>({items:[1,2],total:4}),{listPath:"items",pageSize:2,totalPath:"total"}),/répétée/);});
+test("total non atteint refusé",async()=>{await assert.rejects(collectPages(async p=>({items:p===1?[1,2]:[],total:4}),{listPath:"items",pageSize:2,totalPath:"total"}),/incomplète/);});
