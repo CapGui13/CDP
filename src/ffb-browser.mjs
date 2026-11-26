@@ -135,6 +135,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
   await signin();
   return {
     currentSeason: () => call('lancelot', 'seasons/current'),
+    persons: (params) => call('www','api/persons/search',params),
     ranking,
     registration,
     sessions: (id,currentPage=1,maxPerPage=80) => call('www', `api/competitions/simultaneous/${id}/sessions`, {currentPage,maxPerPage}),
