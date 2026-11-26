@@ -34,3 +34,15 @@ Source réglementaire unique : [règlement du Comité de Provence](https://coupe
 5. Les projections restent non officielles, les résultats manquants ne sont jamais traités comme des absences confirmées.
 
 Statut : initialisation. Aucun résultat FFB n'a encore été importé.
+
+## Studio par query (sans secrets GitHub Actions)
+
+1. Dans Settings → Pages, choisir Deploy from a branch, main, / (root).
+2. Ouvrir https://capgui13.github.io/CDP/ une fois le déploiement terminé.
+3. Se connecter avec son compte FFB et la clé Firebase utilisée dans l'ancien studio CVS. Les secrets ne sont pas sauvegardés.
+4. S1 / 364548 est préconfigurée. Cliquer sur Query : résultats (page 1).
+5. Exporter le JSON reçu ou relever sa structure pour définir le mapping réel. Ne pas partager les jetons ou les données non nécessaires.
+6. Renseigner les chemins du tableau, du total et des champs, puis tester le mapping. Récupérer toutes les pages et importer seulement après validation.
+7. Le classement est mis à jour localement ; exporter les séances normalisées pour sauvegarder ou transférer les données.
+
+Les deux routes de classement déjà permises par le relais existant sont sélectionnables. Le schéma des résultats CDP et les champs de séries doivent encore être confirmés sur une query réelle. Les hypothèses de mapping ne sont jamais appliquées silencieusement. La publication publique automatique de résultats n'est pas activée.
