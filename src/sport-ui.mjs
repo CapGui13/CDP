@@ -104,6 +104,6 @@ export function createSportUI({document,storage,getState,openPair,render,pairDis
     for(const t of items)target.append(el("div","target-row",t.sessions+" séance(s) future(s) : "+(t.score===null?"Objectif impossible même à 100 %":pct(t.score))));body.append(target);}
    if(!targets.length)body.append(el("p","muted","Objectif de score indisponible : seuil certain absent, participation impossible ou saison terminée."));
   },
-  openShared(){if(shareOpened||typeof location==="undefined")return;shareOpened=true;const key=new URLSearchParams(location.search).get("paire");if(!key)return;const p=index.get(key);if(p)openPair(p);else $("sportNotice").textContent="Ce lien ne correspond pas à une paire unique dans cette publication.";}
+  openShared(key){if(shareOpened)return;shareOpened=true;if(!key)return;const p=index.get(key);if(p)openPair(p);else $("sportNotice").textContent="Ce lien ne correspond pas à une paire unique dans cette publication.";}
  };
 }
