@@ -183,18 +183,19 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><span id="arrays" class="muted"></span></div>
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details>
 </div></section>
-<section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Résultats normalisés conservés dans le navigateur</p></div></div><div class="panel-inner"><div class="actions"><button id="save" class="secondary">Exporter les séances</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync3";
 import {readRanking,normalizeFfbRanking} from "./src/auto-import.mjs?v=names1";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=names1";
 import {computeRanking} from "./src/ranking.mjs";
+import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
 let pendingPreview=null;
-let api=null,busy=false,state={completedSessions:[],rows:[]},result=null;
+let api=null,busy=false,state={completedSessions:[],rows:[],previews:{},savedAt:null},result=null;
 const storage="cdp-2027-normalized-v1";
 const mapping={center:"",score:"",license1:"",license2:"",series1:"",series2:"",name1:"",name2:"",seriesValues:{}};
 $("mapping").value=JSON.stringify(mapping,null,2);
@@ -210,14 +211,29 @@ function inspect(){const payload=JSON.parse($("raw").value);const paths=arrayPat
 function showRaw(payload){$("raw").value=JSON.stringify(payload,null,2);inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
 function validate(next){if(!Array.isArray(next.rows)||!Array.isArray(next.completedSessions))throw Error("Sauvegarde invalide");return computeRanking(next.rows,{completedSessions:next.completedSessions});}
-function commit(next){const checked=validate(next);localStorage.setItem(storage,JSON.stringify(next));state=next;result=checked;pendingPreview=null;render();}
+function saveSnapshot(next,preview=null){
+ const parsed=readSnapshot(next),checked=validate(parsed);
+ try{localStorage.setItem(storage,JSON.stringify(parsed));}
+ catch(e){throw Error("Sauvegarde locale impossible : espace insuffisant ou stockage bloqué. Les anciennes données sont conservées.");}
+ state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;render();
+}
+function commit(next){saveSnapshot(withValidated(state,next));}
+function storePreview(preview){const update=withPreview(state,preview);saveSnapshot(update.snapshot,preview);return update.kept;}
+function updateArchive(){
+ const select=$("savedView");select.replaceChildren(new Option("Classement validé",""));
+ const entries=Object.values(state.previews??{}).sort((a,b)=>a.session-b.session);
+ for(const p of entries)select.add(new Option("S"+p.session+" · "+p.rows.length+" paires collectées (aperçu)",String(p.session)));
+ select.value=pendingPreview?String(pendingPreview.session):"";
+ $("savedInfo").textContent=state.savedAt?"Sauvegarde locale : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · "+state.completedSessions.length+" séance(s) validée(s) · "+entries.length+" aperçu(s)":"Aucune collecte sauvegardée.";
+}
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
 const statuses={provisional:"Dans le quota",conditional:"Qualifiable sous condition",outside:"Hors quota",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
 function render(){
  result=result||validate(state);
+ updateArchive();
  const selected=$("center").value;
  $("center").replaceChildren(new Option("Tous les centres",""));
- for(const c of [...new Set(state.rows.map(r=>r.center))].sort())$("center").add(new Option(c,c));
+ for(const c of [...new Set((pendingPreview?.rows??state.rows).map(r=>r.center).filter(Boolean))].sort())$("center").add(new Option(c,c));
  $("center").value=[...$("center").options].some(o=>o.value===selected)?selected:"";
  $("overview").textContent=result.completedSessions.length+" / 6 séances importées · "+result.ranking.length+" paires distinctes";
  const view=$("view").value,center=$("center").value,search=$("search").value.toLocaleLowerCase("fr");
@@ -225,11 +241,11 @@ function render(){
  $("ranking").replaceChildren();$("empty").hidden=rows.length>0;
  if(pendingPreview){
   const pp=pendingPreview;
-  $("overview").textContent="Aperçu FFB S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
+  $("overview").textContent="Aperçu FFB sauvegardé S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
   const list=pp.rows.filter(p=>(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search)))&&(!center||p.center===center));
   $("empty").hidden=list.length>0;
   if(view==="all"){for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}}else{$("empty").hidden=false;}
-  $("quotas").textContent="Calcul suspendu : l'aperçu ne contient pas toutes les données nécessaires. Le classement enregistré est conservé.";
+  $("quotas").textContent="Calcul suspendu pour cet aperçu : "+(pp.reasons?.join(" ; ")||"données à valider")+". Le classement enregistré est conservé.";
   return;
  }
  for(const p of rows){
@@ -263,24 +279,26 @@ $("query").onclick=run(async()=>{
  }
  const normalized=normalizeFfbRanking(raw,c.session);
  if(!normalized.complete || total===null){
-  pendingPreview={session:c.session,rows:normalized.rows};$("view").value="all";$("center").value="";render();
   const reasons=[];
   if(normalized.missing.center)reasons.push(normalized.missing.center+" centres organisateurs manquants");
   if(normalized.missing.series)reasons.push(normalized.missing.series+" séries de joueurs manquantes");
   if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");
-  message(raw.length+" paires reçues et affichées en aperçu. Qualifications non calculées : "+reasons.join(" ; ")+". Clique sur Exporter la réponse JSON pour identifier les champs réels.");
+  $("view").value="all";$("center").value="";
+  const kept=storePreview({session:c.session,rows:normalized.rows,reasons});
+  message(kept?"Nouvelle réponse plus courte : l'aperçu précédent de "+pendingPreview.rows.length+" paires a été conservé.":raw.length+" paires collectées, affichées et sauvegardées dans ce navigateur. Qualifications non calculées : "+reasons.join(" ; ")+".");
   return;
  }
  commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...normalized.rows]});
- message(raw.length+" paires importées pour S"+c.session+" ; classement recalculé.");
+ message(raw.length+" paires importées et sauvegardées pour S"+c.session+" ; classement recalculé.");
 });
 $("inspect").onclick=run(async()=>{inspect();message("Structure analysée.");});
 $("exportRaw").onclick=run(async()=>{download("cdp-query.json",JSON.parse($("raw").value));message("Export JSON lancé.");});
 $("preview").onclick=run(async()=>{const c=config(),raw=at(JSON.parse($("raw").value),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
 $("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");});
 $("save").onclick=()=>download("cdp-2027-seances.json",state);
-$("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());commit(next);message("Sauvegarde restaurée.");});
+$("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
 for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
-try{const cached=localStorage.getItem(storage);if(cached){const next=JSON.parse(cached);result=validate(next);state=next;}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
+$("savedView").onchange=()=>{pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
+try{const cached=localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
 render();
 </script></body></html>
