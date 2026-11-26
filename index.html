@@ -339,7 +339,7 @@ function openPair(p){
  field("Rang général",rank(d.generalRank,d.generalTotal));
  field("Rang dans la catégorie",rank(d.categoryRank,d.categoryTotal));
  field("Rang dans le centre (catégorie)",rank(d.centerRank,d.centerTotal));
- field("Rang local hors directs et paires non éligibles",p.route==="direct"?"Qualification directe":rank(d.localRank,d.localTotal));
+ field("Rang local hors directs et paires définitivement non qualifiables",p.route==="direct"?"Qualification directe":rank(d.localRank,d.localTotal));
  field("Quota local prévisionnel",d.quotaMin===null?"À déterminer":d.quotaMin===d.quotaMax?String(d.quotaMin):d.quotaMin+" à "+d.quotaMax);
  field("Séances jouées ensemble",p.count+" / 6 · "+d.missing+" restante(s) pour atteindre 4");
  field("Moyenne actuelle",percent(p.average));
