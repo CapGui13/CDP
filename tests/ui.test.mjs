@@ -10,6 +10,7 @@ import * as ranking from "../src/ranking.mjs";
 import * as provisional from "../src/provisional.mjs";
 import * as publication from "../src/publication.mjs";
 import * as query from "../src/query-import.mjs";
+import * as details from "../src/qualification-details.mjs";
 const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const storeKey="cdp-2027-normalized-v1";
 function element(value=""){
@@ -26,7 +27,7 @@ function boot(storage,client,{published=null,acceptToken=true}={}){
  const document={getElementById:id=>elements.get(id),createElement:()=>element()};
  const Option=function(text,value){this.text=text;this.value=value;};
  const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))};
- const modules={"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
+ const modules={"qualification-details.mjs":details,"github-publish.mjs":{connectPublisher:async token=>{if(!acceptToken||token!=="test-token")throw Error("Token invalide");return {close(){},publish:async()=>({commit:"test-commit"})};}},"ffb-browser.mjs":{makeFfbClient:async()=>client},"session-sync.mjs":sync,"auto-import.mjs":auto,"sync.mjs":calendar,"persistence.mjs":persistence,"presentation.mjs":presentation,"ranking.mjs":ranking,"provisional.mjs":provisional,"publication.mjs":publication,"query-import.mjs":query};
  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
  const imports=[...script.matchAll(/import\s+\{([^}]+)\}\s+from\s+"\.\/src\/([^"?]+)(?:\?[^"]*)?";/g)];
  const names=imports.flatMap(m=>m[1].split(",").map(x=>x.trim()));
@@ -95,4 +96,19 @@ test("coupe avant les noms : projection directe ou locale, égalités et hors pr
   assert.equal(tr.children[0].children[1].textContent,"A / B");
   assert.equal(tr.children[1].children[0].textContent,label);
  }
+});
+
+test("fiche de paire cliquable : rangs, seuil, participation et fermeture",async()=>{
+ const rows=Array.from({length:3},(_,i)=>({session:1,center:"A",score:70-i,players:[{license:"a"+i,name:"Exemple A"+i,series:"3P"},{license:"b"+i,name:"Exemple B"+i,series:"3P"}]}));
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1],rows,previews:{},savedAt:"2026-11-26T20:00:00Z"},()=>String(++i));
+ const e=boot(new Map(),null,{published});
+ await new Promise(resolve=>setTimeout(resolve,0));
+ const row=e.get("ranking").children[0];
+ assert.equal(row.children[0].children[1].textContent,"Cat. 1 · C. 1");
+ row.children[1].children[1].onclick();
+ assert.equal(e.get("pairDialog").open,true);
+ const fields=e.get("pairDetails").children.find(x=>x.className==="pair-detail-grid").children;
+ assert.equal(fields[0].textContent,"Rang général");assert.equal(fields[1].textContent,"1 / 3");
+ assert.ok(fields.some(x=>x.textContent==="1 / 6 · 3 restante(s) pour atteindre 4"));
+ e.get("pairClose").onclick();assert.equal(e.get("pairDialog").open,false);
 });
