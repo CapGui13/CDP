@@ -187,11 +187,11 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
-import {syncSession} from "./src/session-sync.mjs?v=audit2";
+import {syncSession} from "./src/session-sync.mjs?v=audit3";
 import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
-import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit1";
+import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
 import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
 import {computeRanking} from "./src/ranking.mjs?v=audit1";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=audit2";
@@ -351,10 +351,10 @@ $("schemaExport").onclick=run(async()=>{
  }
  download("cdp-schema-ffb.json",rankingSchema);
  message("Schéma du classement S"+rankingSchema.session+" exporté, sans valeurs personnelles.");
-});
+},{network:true});
 $("exportRaw").onclick=run(async()=>{download("cdp-query.json",rawPayload());message("Export JSON lancé.");});
 $("preview").onclick=run(async()=>{const c=config(),raw=at(rawPayload(),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
-$("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);startLocal();commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");});
+$("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);startLocal();commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");},{network:true});
 $("save").onclick=()=>download("cdp-2027-seances.json",state);
 $("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length&&!Object.keys(state.previews).length)throw Error("Aucun résultat collecté.");download("published.json",publicSnapshot(state));message("Fichier public préparé. Dépose-le dans data/published.json sur GitHub pour rendre le classement consultable.");});
 $("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());if(next?.schema==="cdp-public-v1")throw Error("Cette publication publique ne peut pas remplacer les données de travail privées.");const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
