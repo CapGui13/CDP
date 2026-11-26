@@ -186,22 +186,23 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 [hidden]{display:none!important}.public-notice{margin:12px 27px 0;font-size:12px}
 </style></head>
 <body class="compact-view">
-<header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><a id="publicLink" class="btn" href="?public=1">Classement public</a><a id="adminLink" class="btn" href="?admin=1" hidden>Espace gestion</a><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
+<header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="manageOpen" class="secondary" type="button">Gestion</button><button id="manageClose" class="secondary" type="button" hidden>Fermer la gestion</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
 <main class="shell main-shell">
 <section class="panel rankings-panel"><div class="panel-head"><div><h2>Classement des paires</h2><p class="panel-subtitle">Moyenne des quatre meilleurs pourcentages · Qualification provisoire</p></div><div class="panel-meta"><span id="overview" class="meta-item">Aucune séance importée</span></div></div>
 <p id="publicNotice" class="public-notice muted" hidden role="status"></p><div class="controls"><div class="fields filters-row"><label>Classement<select id="view" class="input"><option value="all">Général</option><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Centre<select id="center" class="input"><option value="">Tous les centres</option></select></label><label>Recherche<input id="search" class="input" type="search" placeholder="Rechercher un joueur ou un n° FFB"></label></div></div>
 <div class="table-zone"><div class="table-wrap"><table class="cdp-table"><thead><tr><th>Rang</th><th>Paire</th><th>Centre</th><th>Finale</th><th>Jouées</th><th>Moyenne</th><th>Qualification</th><th>S1<span class="date-caption">25/11</span></th><th>S2<span class="date-caption">27/01</span></th><th>S3<span class="date-caption">24/02</span></th><th>S4<span class="date-caption">24/03</span></th><th>S5<span class="date-caption">14/04</span></th><th>S6<span class="date-caption">05/05</span></th></tr></thead><tbody id="ranking"></tbody></table></div><div class="empty-state" id="empty"><strong>Aucun résultat à afficher</strong><span id="emptyHint">Connecte-toi à la FFB pour récupérer les résultats.</span></div><div class="table-foot"><span>Les scores retenus sont en vert menthe. Projections non officielles.</span><span class="category-legend"><span><i class="cat-swatch cat1"></i>Cat. 1 · 2C ou +</span><span><i class="cat-swatch cat2"></i>Cat. 2</span><span><i class="cat-swatch cat-unknown"></i>Catégorie inconnue</span></span></div></div>
 <div class="quota-area"><details><summary>Quotas prévisionnels par centre et évolution</summary><div id="quotas"></div></details></div></section>
-<section id="syncPanel" class="panel"><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
+<section id="syncPanel" class="panel" hidden><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
 <div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
 <dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog>
 <h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button id="findCenters" class="secondary">Identifier les centres de jeu</button><button id="cancelSync" class="secondary" disabled>Arrêter</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" class="notice" role="status"></p>
 <details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><button class="secondary" id="schemaExport">Exporter le schéma (sans données personnelles)</button><span id="arrays" class="muted"></span></div><p id="schemaStatus" class="muted" role="status"></p>
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details>
 </div></section>
-<section id="storagePanel" class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><a class="btn" href="https://github.com/CapGui13/CDP/upload/main/data" target="_blank" rel="noopener noreferrer">Publier sur GitHub</a><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
-</main>
+<section id="storagePanel" class="panel" hidden><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><button id="publishDirect" class="primary" type="button">Publier le classement</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
+</main><dialog id="manageDialog"><div class="modal-head"><h2>Activer la gestion</h2><button id="manageCancel" class="modal-close" type="button" aria-label="Fermer">×</button></div><form id="manageForm" class="ffb-login-form"><label>Token GitHub<input id="githubToken" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Token limité au dépôt CapGui13/CDP, permission Contents : lecture et écriture. Il reste en mémoire uniquement jusqu’à la fermeture de la gestion ou de la page.</p><div class="actions"><button id="manageSubmit" class="primary" type="submit">Activer</button></div></form><p id="manageStatus" class="muted" role="status"></p></dialog>
 <script type="module">
+import {connectPublisher} from "./src/github-publish.mjs?v=1";
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
 import {syncSession} from "./src/session-sync.mjs?v=real-s1";
 import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
@@ -214,9 +215,9 @@ import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persis
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
-const modeParams=new URLSearchParams(typeof location==="undefined"?"":location.search);
-const forcePublic=modeParams.get("public")==="1",forceAdmin=!forcePublic&&modeParams.get("admin")==="1";
-let pendingPreview=null,publicMode=false,aggregatePreview=false;
+let publisher=null,publicError="",publishedCache=null,publicLoad=0,unlocking=false;
+const emptyState=()=>readSnapshot({completedSessions:[],rows:[],previews:{},savedAt:null});
+let pendingPreview=null,publicMode=true,aggregatePreview=false;
 const discovered=new Map([[1,364548]]);
 let quotaComparisonCache=null,quotaComparisonResult=null;
 let api=null,busy=false,state={completedSessions:[],rows:[],previews:{},savedAt:null},result=null;
@@ -245,15 +246,16 @@ function config(){
  if(!Number.isSafeInteger(id)||id<1||!Number.isInteger(page)||page<1||!Number.isInteger(size)||size<1||size>200)throw Error("Paramètres de query invalides");
  return {session,id,page,size,route:$("route").value};
 }
-function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
-function startLocal(){if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
+function requireApi(){if(!publisher)throw Error("Active d’abord la gestion.");if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
+function startLocal(){if(!publisher)throw Error("Gestion non activée.");if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
 let operation=null;
-function run(fn,{network=false}={}){return async()=>{if(busy)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),120000);}$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de 2 minutes). Données déjà collectées conservées.":e.message||"Erreur",true);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
+function run(fn,{network=false}={}){return async()=>{if(busy||!publisher)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),120000);}$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de 2 minutes). Données déjà collectées conservées.":e.message||"Erreur",true);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=rawPayload();const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload,kind="liste"){$("raw").value=JSON.stringify(payload,null,2);rawKind=kind;inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
 function validate(next){if(!Array.isArray(next.rows)||!Array.isArray(next.completedSessions))throw Error("Sauvegarde invalide");return computeRanking(next.rows,{completedSessions:next.completedSessions});}
 function saveSnapshot(next,preview=null){
+ if(!publisher)throw Error("Gestion non activée.");
  const parsed=readSnapshot(next),checked=validate(parsed);
  try{localStorage.setItem(storage,JSON.stringify(parsed));}
  catch(e){throw Error("Sauvegarde locale impossible : espace insuffisant ou stockage bloqué. Les anciennes données sont conservées.");}
@@ -272,9 +274,9 @@ function updateArchive(){
 function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
 const statuses={provisional:"Dans la projection",conditional:"Dans la projection · séances requises",outside:"Hors projection",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
 function render(){
- const publicView=forcePublic||publicMode;
- $("syncPanel").hidden=publicView;$("storagePanel").hidden=publicView;$("publicLink").hidden=publicView;$("adminLink").hidden=!publicView;
- $("publicNotice").hidden=!publicView;$("publicNotice").textContent=publicView?(state.savedAt?"Classement public · Dernière publication : "+new Date(state.savedAt).toLocaleString("fr-FR")+" · Projection non officielle":"Chargement du classement public…"):"";
+ const publicView=!publisher;
+ $("syncPanel").hidden=publicView;$("storagePanel").hidden=publicView;$("manageOpen").hidden=!publicView;$("manageClose").hidden=publicView;
+ $("publicNotice").hidden=!publicView;$("publicNotice").textContent=publicView?(publicError|| (state.savedAt?"Classement public · Données du "+new Date(state.savedAt).toLocaleString("fr-FR")+" · Projection non officielle":"Chargement du classement public…")):"";
  $("search").placeholder=publicView?"Rechercher un joueur":"Rechercher un joueur ou un n° FFB";
  $("emptyHint").textContent=publicView?"Aucun résultat publié pour le moment.":"Connecte-toi à la FFB pour récupérer les résultats.";
  result=result||validate(state);
@@ -343,9 +345,9 @@ function render(){
  for(const w of result.warnings){const d=document.createElement("p");d.className="warning";d.textContent=w;$("quotas").append(d);}
 }
 function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
-$("openLogin").onclick=()=>{$("loginStatus").textContent="";$("loginDialog").showModal();};
+$("openLogin").onclick=()=>{if(!publisher)return;$("loginStatus").textContent="";$("loginDialog").showModal();};
 $("closeLogin").onclick=()=>{if(!busy)$("loginDialog").close();};
-$("loginForm").onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;$("connect").disabled=true;$("loginStatus").textContent="Connexion…";api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:FFB_CLIENT_CONFIG});$("auth").textContent="Connecté";$("loginDialog").close();message("Connexion FFB réussie.");}catch(e){$("loginStatus").textContent=e.message||"Échec de connexion";}finally{$("password").value="";$("connect").disabled=false;busy=false;}};
+$("loginForm").onsubmit=async e=>{e.preventDefault();if(!publisher)return;if(busy)return;busy=true;$("connect").disabled=true;$("loginStatus").textContent="Connexion…";api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:FFB_CLIENT_CONFIG});$("auth").textContent="Connecté";$("loginDialog").close();message("Connexion FFB réussie.");}catch(e){$("loginStatus").textContent=e.message||"Échec de connexion";}finally{$("password").value="";$("connect").disabled=false;busy=false;}};
 $("disconnect").onclick=()=>{if(busy)return;api=null;$("auth").textContent="Non connecté";$("password").value="";message("Session locale fermée.");};
 $("session").onchange=()=>{$("sessionId").value=discovered.get(Number($("session").value))??"";};
 async function refreshSessions(client){
@@ -409,20 +411,48 @@ $("schemaExport").onclick=run(async()=>{
 $("exportRaw").onclick=run(async()=>{download("cdp-query.json",rawPayload());message("Export JSON lancé.");});
 $("preview").onclick=run(async()=>{const c=config(),raw=at(rawPayload(),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
 $("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);startLocal();commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");},{network:true});
-$("save").onclick=()=>download("cdp-2027-seances.json",state);
-$("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length)throw Error("Aucune séance validée à publier.");if(Object.keys(state.previews).length)throw Error("Termine la validation des collectes en attente avant de publier.");download("published.json",publicSnapshot(state));message("Fichier public préparé, sans numéros FFB. Clique sur Publier sur GitHub et remplace data/published.json par ce fichier.");});
+$("save").onclick=()=>{if(publisher)download("cdp-2027-seances.json",state);};
+function publicationCandidate(){if(publicMode||!state.rows.length)throw Error("Aucune séance locale validée à publier. Restaure ta sauvegarde privée ou actualise toutes les séances FFB.");if(Object.keys(state.previews).length)throw Error("Termine la validation des collectes en attente avant de publier.");validate(state);return publicSnapshot(state);}
+$("publishDirect").onclick=run(async()=>{const snapshot=publicationCandidate();$("publishDirect").disabled=true;try{message("Publication GitHub en cours…");const receipt=await publisher.publish(snapshot);publishedCache=readPublicSnapshot(snapshot);message("Classement publié sur GitHub · "+snapshot.rows.length+" résultats · commit "+receipt.commit.slice(0,8)+". GitHub Pages peut nécessiter un court délai de déploiement.");}finally{$("publishDirect").disabled=false;}});
+$("publishExport").onclick=run(async()=>{if(publicMode)throw Error("Ouvre tes données locales avant de préparer une nouvelle publication.");if(!state.rows.length)throw Error("Aucune séance validée à publier.");if(Object.keys(state.previews).length)throw Error("Termine la validation des collectes en attente avant de publier.");download("published.json",publicSnapshot(state));message("Fichier public préparé, sans numéros FFB. Le bouton Publier le classement permet aussi une publication directe.");});
 $("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());if(next?.schema==="cdp-public-v1")throw Error("Cette publication publique ne peut pas remplacer les données de travail privées.");const parsed=readSnapshot(next);saveSnapshot(parsed,parsed.rows.length?null:latestPreview(parsed));message("Sauvegarde restaurée, y compris les aperçus collectés.");});
 for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
 $("savedView").onchange=()=>{aggregatePreview=$("savedView").value==="aggregate";pendingPreview=state.previews[$("savedView").value]??null;$("view").value="all";$("center").value="";render();};
-try{const cached=forcePublic?null:localStorage.getItem(storage);if(cached){const next=readSnapshot(JSON.parse(cached));result=validate(next);state=next;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
-render();
-updateSchemaStatus();
-if(!forceAdmin&&(forcePublic||(!state.rows.length&&!Object.keys(state.previews).length))){
- fetch("./data/published.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("Publication indisponible");return r.json();}).then(data=>{
-  if(!forcePublic&&(busy||state.rows.length||Object.keys(state.previews).length))return;
-  const published=readPublicSnapshot(data);
-  if(!published.rows.length&&!Object.keys(published.previews).length){if(forcePublic)$("publicNotice").textContent="Aucun résultat publié pour le moment.";return;}
-  result=validate(published);state=published;publicMode=true;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);render();
- }).catch(()=>{if(forcePublic)$("publicNotice").textContent="Classement public momentanément indisponible. Actualise la page."});
+function showPublic(snapshot){
+ state=snapshot||emptyState();result=validate(state);publicMode=true;
+ aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);render();
 }
+async function loadPublic(){
+ const requestId=++publicLoad;publicError="";showPublic(publishedCache);
+ try{const response=await fetch("./data/published.json",{cache:"no-store"});
+  if(!response.ok)throw Error("Publication indisponible");
+  const next=readPublicSnapshot(await response.json());validate(next);
+  if(requestId!==publicLoad||publisher)return;
+  publishedCache=next;publicError=next.rows.length?"":"Aucun résultat publié pour le moment.";showPublic(next);
+ }catch(e){if(requestId===publicLoad&&!publisher){publicError="Classement public momentanément indisponible. Actualise la page.";render();}}
+}
+$("manageOpen").onclick=()=>{if(unlocking||publisher)return;$("manageStatus").textContent="";$("githubToken").value="";$("manageDialog").showModal();};
+$("manageCancel").onclick=()=>{if(unlocking)return;$("githubToken").value="";$("manageDialog").close();};
+$("manageDialog").addEventListener("close",()=>{$("githubToken").value="";});
+$("manageForm").onsubmit=async e=>{
+ e.preventDefault();if(unlocking||publisher||busy)return;unlocking=true;$("manageSubmit").disabled=true;
+ $("manageStatus").textContent="Vérification des droits GitHub…";
+ try{
+  const candidate=await connectPublisher($("githubToken").value);
+  let privateState;
+  try{const cached=localStorage.getItem(storage);privateState=cached?readSnapshot(JSON.parse(cached)):emptyState();validate(privateState);}
+  catch(e){candidate.close();throw Error("Sauvegarde locale illisible : "+e.message);}
+  publisher=candidate;++publicLoad;state=privateState;result=validate(state);publicMode=false;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);
+  $("manageDialog").close();render();
+  message(state.rows.length?"Gestion activée. Sauvegarde privée restaurée.":"Gestion activée. Aucune sauvegarde privée : restaure ton export ou actualise toutes les séances FFB avant de publier.");
+ }catch(e){$("manageStatus").textContent=e.message||"Impossible de vérifier le token.";}
+ finally{$("githubToken").value="";$("manageSubmit").disabled=false;unlocking=false;}
+};
+$("manageClose").onclick=async()=>{
+ if(!publisher||busy||unlocking)return;
+ publisher.close();publisher=null;api=null;$("auth").textContent="Non connecté";$("password").value="";$("raw").value="";$("previewOutput").textContent="Aucun aperçu."; $("message").textContent="";
+ await loadPublic();
+};
+updateSchemaStatus();
+loadPublic();
 </script></body></html>
