@@ -187,9 +187,9 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 </main>
 <script type="module">
 import {makeFfbClient} from "./src/ffb-browser.mjs?v=20261126-sync3";
-import {readRanking,normalizeFfbRanking} from "./src/auto-import.mjs?v=names1";
-import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=names1";
-import {computeRanking} from "./src/ranking.mjs";
+import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=iv2";
+import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=iv2";
+import {computeRanking} from "./src/ranking.mjs?v=iv2";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
@@ -244,7 +244,7 @@ function render(){
   $("overview").textContent="Aperçu FFB sauvegardé S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
   const list=pp.rows.filter(p=>(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search)))&&(!center||p.center===center));
   $("empty").hidden=list.length>0;
-  if(view==="all"){for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}}else{$("empty").hidden=false;}
+  {for(const p of list.filter(p=>view==="all"||String(displayCategory(p.players))===view)){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}$("empty").hidden=$("ranking").children.length>0;}
   $("quotas").textContent="Calcul suspendu pour cet aperçu : "+(pp.reasons?.join(" ; ")||"données à valider")+". Le classement enregistré est conservé.";
   return;
  }
@@ -278,6 +278,37 @@ $("query").onclick=run(async()=>{
   raw=await collectPages((p,size)=>client.sessionRanking(c.id,p,size,c.route),{listPath:paths[0],totalPath,pageSize:c.size});
  }
  const normalized=normalizeFfbRanking(raw,c.session);
+ const rows=normalized.rows;
+ const known=new Map();
+ for(const previous of [...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)])for(const p of previous.players)if(p.series)known.set(p.license,p.series);
+ for(const row of rows)for(const p of row.players)if(!p.series&&known.has(p.license))p.series=known.get(p.license);
+ const reasonsFor=()=>{const reasons=[];const missingCenters=rows.filter(r=>!r.center).length,missingSeries=rows.flatMap(r=>r.players).filter(p=>!p.series).length;if(missingCenters)reasons.push(missingCenters+" centres organisateurs manquants");if(missingSeries)reasons.push(missingSeries+" séries de joueurs manquantes");if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");return reasons;};
+ const saveProgress=()=>storePreview({session:c.session,rows,reasons:reasonsFor()});
+ $("view").value="all";$("center").value="";
+ // Sauvegarder d'abord les résultats réels, puis les enrichir par petits lots.
+ if(reasonsFor().length)saveProgress();
+ const todo=rows.flatMap(r=>r.players).filter(p=>!p.series&&p.personId);
+ let lookupNote="";
+ if(todo.length){
+   try{
+     const season=await client.currentSeason();
+     if(Number(season?.id)!==38)throw Error("Saison FFB 2026–2027 non confirmée (identifiant attendu 38).");
+     let done=0,found=0;
+     for(let i=0;i<todo.length;i+=4){
+       await Promise.all(todo.slice(i,i+4).map(async p=>{
+         try{const data=await client.ranking(p.personId,38);const series=extractSeries(data?.data??data);if(series){p.series=series;found++;}}catch(e){if(!lookupNote)lookupNote=e.message||"Fiche inaccessible";}
+         finally{done++;}
+       }));
+       if(i%20===0||done===todo.length)saveProgress();
+       message("FFB : séries récupérées "+found+" · "+done+"/"+todo.length+" fiches consultées.");
+       if(done>=8&&found===0){lookupNote=lookupNote||"Aucune série ni IV reconnu dans les premières fiches.";break;}
+     }
+     saveProgress();
+   }catch(e){lookupNote=e.message||"Enrichissement impossible";}
+ }else if(rows.some(r=>r.players.some(p=>!p.series)))lookupNote="Identifiants internes des joueurs absents de la réponse.";
+ normalized.missing.center=rows.filter(r=>!r.center).length;
+ normalized.missing.series=rows.flatMap(r=>r.players).filter(p=>!p.series).length;
+ normalized.complete=!normalized.missing.center&&!normalized.missing.series;
  if(!normalized.complete || total===null){
   const reasons=[];
   if(normalized.missing.center)reasons.push(normalized.missing.center+" centres organisateurs manquants");
@@ -285,7 +316,7 @@ $("query").onclick=run(async()=>{
   if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");
   $("view").value="all";$("center").value="";
   const kept=storePreview({session:c.session,rows:normalized.rows,reasons});
-  message(kept?"Nouvelle réponse plus courte : l'aperçu précédent de "+pendingPreview.rows.length+" paires a été conservé.":raw.length+" paires collectées, affichées et sauvegardées dans ce navigateur. Qualifications non calculées : "+reasons.join(" ; ")+".");
+  message((kept?"Nouvelle réponse plus courte : l'aperçu précédent de "+pendingPreview.rows.length+" paires a été conservé.":raw.length+" paires collectées et sauvegardées. "+normalized.rows.filter(r=>displayCategory(r.players)!==null).length+" paires catégorisées. Qualifications non calculées : "+reasons.join(" ; ")+".")+(lookupNote?" "+lookupNote:""));
   return;
  }
  commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...normalized.rows]});
