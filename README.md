@@ -29,12 +29,12 @@ Source réglementaire unique : [règlement du Comité de Provence](https://coupe
 
 Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md).
 
-- Ouvrir https://capgui13.github.io/CDP/, se connecter à la FFB et utiliser « Actualiser toutes les séances FFB ». Les résultats déjà sauvegardés sont conservés.
+- Page unique : https://capgui13.github.io/CDP/. Le classement public est affiché par défaut, indépendamment du cache privé. Pour gérer la saison, cliquer sur « Gestion », renseigner un token GitHub limité à CapGui13/CDP (Contents : lecture et écriture), puis se connecter à la FFB et actualiser les séances. Les résultats privés déjà sauvegardés sont restaurés après déverrouillage. Le token est conservé uniquement en mémoire et ne transite pas par le proxy FFB.
 - « Identifier les centres de jeu » traite seulement les centres ; « Actualiser la séance choisie » traite la séance sélectionnée. L'arrêt manuel et la limite de deux minutes conservent les collectes effectuées. Une nouvelle actualisation reprend les fiches et centres restants.
 - La route FFB constatée utilise `simultaneousId` et `paginate=true`. Le moteur vérifie chaque groupe par licences, conserve les pourcentages du général et ne déduit jamais le centre du club de licence. Pas de balayage des annuaires de joueurs.
 - Le barème IV comprend les neuf catégories hors quota. Les fiches fédérales sont consultées uniquement si la série manque.
 - Les moyennes cumulées sont visibles dès la première collecte ; les qualifications ne sont calculées que pour les séances validées (couverture, centres, séries).
-- La sauvegarde reste locale au navigateur ; export JSON privé possible. Le classement public est lu dans `data/published.json` après publication volontaire du fichier sportif minimal. Ne jamais déposer une sauvegarde privée brute dans ce dépôt public.
+- La sauvegarde reste locale au navigateur ; export JSON privé possible. Après validation des séances, « Publier le classement » envoie directement le fichier sportif minimal à GitHub (`data/published.json`, branche main). Les numéros FFB et identifiants internes sont exclus. La publication refuse une sauvegarde plus ancienne, une séance supprimée/raccourcie ou une modification concurrente ; GitHub confirme les droits effectifs d’écriture au moment de la publication. Fermer la gestion réaffiche le classement public et efface le token de la mémoire applicative. Ne jamais déposer une sauvegarde privée brute dans ce dépôt public.
 
 ## Tests
 
