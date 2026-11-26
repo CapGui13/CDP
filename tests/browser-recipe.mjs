@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import {chromium} from "playwright";
+import AxeBuilder from "@axe-core/playwright";
+import {mkdir,writeFile} from "node:fs/promises";
+import {execFileSync} from "node:child_process";
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext({acceptDownloads:true,viewport:{width:1440,height:950}});
+const page=await context.newPage(),errors=[],audits=[];
+page.on("pageerror",e=>errors.push(e.message));
+const root=process.env.CDP_TEST_URL||"http://127.0.0.1:8765/";
+await mkdir("browser-report",{recursive:true});
+try{
+ await page.goto(root);await page.locator("#ranking tr").first().waitFor();
+ const count=await page.locator("#ranking tr").count();assert.ok(count>0);
+ const audit=async(name)=>{const a=await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21a","wcag21aa"]).analyze();audits.push({name,violations:a.violations.map(v=>({id:v.id,impact:v.impact,description:v.description,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}))});};
+ await audit("classement sombre");
+ await page.locator("#ranking tr").first().locator(".pair-name-link").click();
+ await page.locator("#pairDialog").waitFor({state:"visible"});assert.ok(await page.locator("#pairDetails").getByRole("heading",{name:"Course à la finale"}).isVisible());
+ await audit("fiche paire");await page.locator("#pairClose").click();
+ await page.locator("#racePlayers").click();await page.locator("#raceDetails input").fill("ros");assert.ok(await page.locator("#raceDetails tbody tr").count()>0);await page.locator("#raceClose").click();
+ await page.locator("#raceBulletin").click();assert.ok((await page.locator("#raceDetails textarea").inputValue()).includes("Bilan S"));await page.locator("#raceClose").click();
+ await page.locator("#raceSimulation").click();const form=page.locator("#raceDetails .race-scenario").first();
+ await form.getByLabel("Type",{exact:true}).selectOption("new");await form.getByLabel("Nombre de paires").fill("2");await page.getByRole("button",{name:"Recalculer le scénario"}).click();
+ assert.ok(await page.getByRole("heading",{name:"Résultats du scénario"}).isVisible());assert.ok(await page.getByRole("heading",{name:"Quotas recalculés"}).isVisible());await page.locator("#raceClose").click();
+ assert.equal(await page.locator("#ranking tr").count(),count);
+ const downloadPromise=page.waitForEvent("download");await page.locator("#raceExcel").click();const dl=await downloadPromise;await dl.saveAs("browser-report/classement.xlsx");execFileSync("unzip",["-t","browser-report/classement.xlsx"]);
+ await page.locator("#themeSwitch").click();assert.equal(await page.locator("html").getAttribute("data-theme"),"light");await audit("classement clair");
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:"browser-report/mobile.png",fullPage:false});await audit("mobile clair");
+ await page.locator("#raceCenters").click();assert.ok(await page.locator("#raceDetails .race-bar-row").count()>0);await page.locator("#raceClose").click();
+ await page.locator("#raceFinal").click();assert.ok((await page.locator("#raceDetails").innerText()).includes("six séances")||(await page.locator("#raceDetails").innerText()).includes("Comité"));await page.locator("#raceClose").click();
+ assert.deepEqual(errors,[]);
+ console.log("Recette Chromium : classement, fiche, joueurs, simulation, export Excel, thème, mobile et finales OK.");
+}finally{
+ await writeFile("browser-report/accessibilite.json",JSON.stringify({audits,errors},null,2));
+ await browser.close();
+}
