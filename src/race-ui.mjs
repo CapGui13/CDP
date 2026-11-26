@@ -1,6 +1,6 @@
-import {matchesSearch,raceStatus,playerDirectory,sideRankings,centerComparison,simulateGlobal,finalPreparation,sportsBulletin} from "./race-tools.mjs";
+import {matchesSearch,raceStatus,playerDirectory,sideRankings,centerComparison,simulateGlobal,finalPreparation,sportsBulletin} from "./race-tools.mjs?v=season-audit1";
 import {pairDisplay,playerName,seriesDisplay} from "./presentation.mjs";
-import {pairRef,pairIndex} from "./sport-dashboard.mjs";
+import {pairRef,pairIndex} from "./sport-dashboard.mjs?v=season-audit1";
 import {makeXlsx} from "./xlsx-export.mjs";
 export function createRaceUI({document,storage,getState,openPair,OptionCtor=globalThis.Option,platform=globalThis}){
  const $=id=>document.getElementById(id);
