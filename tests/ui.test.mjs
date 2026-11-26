@@ -192,3 +192,23 @@ test("adresse canonique : anciens liens de version, index.html et partage",()=>{
  assert.equal(normalize(undefined,undefined),null);
  assert.ok(html.includes('rel="canonical" href="'+base+'"'));
 });
+
+test("saison terminée : accès aux finales, confirmations locales et exclusion des paires non éligibles",async()=>{
+ const rows=[];for(let s=1;s<=6;s++){for(let i=0;i<5;i++){if(i===4&&s>3)continue;rows.push({session:s,center:"A",score:70-i*2+s/10,players:[{license:"a"+i,name:"Fictif A"+i,series:"3P"},{license:"b"+i,name:"Fictif B"+i,series:"3P"}]});}}
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1,2,3,4,5,6],rows,previews:{},savedAt:"2027-05-05T20:00:00Z"},()=>String(++i)),storage=new Map();
+ const e=boot(storage,null,{published});await new Promise(resolve=>setTimeout(resolve,0));
+ assert.ok(e.get("raceStatus").textContent.includes("1 mathématiquement éliminées"));
+ assert.equal(e.get("ranking").children.length,5);
+ e.get("raceFinal").onclick();
+ const body=e.get("raceDetails");assert.ok(body.children[0].textContent.includes("Comité"));
+ const titles=body.children.filter(x=>x.textContent.includes("paires projetées"));
+ assert.equal(titles.length,2);
+ const projectedTable=body.children[body.children.indexOf(titles[1])+1];
+ const dataRows=projectedTable.children[0].children[1].children;
+ assert.equal(dataRows.length,4);
+ const select=dataRows[0].children[3].children[0];select.value="confirmed";select.onchange();
+ assert.ok(storage.get("cdp-final-preparation-v1").includes("confirmed"));
+ assert.equal(e.get("ranking").children.length,5);
+ e.get("raceClose").onclick();e.get("raceSimulation").onclick();
+ assert.ok(e.get("raceDetails").children[0].textContent.includes("Aucune séance future"));
+});
