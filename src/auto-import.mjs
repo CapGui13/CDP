@@ -48,7 +48,8 @@ export function normalizeFfbRanking(rows,session){
   if(raw==null||!Number.isFinite(score)||score<0||score>100)throw Error("Score invalide à la paire "+(i+1)+".");
   const center=[row.center,row.centre,row.organizingCenter,row.sessionCenter,row.hostClub,row.organizingClub,row.organizerClub,row.clubName,row.tournamentClub,row.tournament?.club,row.localTournament?.club,row.localSession?.club,row.clubSession?.club,row.result?.tournament?.club,row.section?.tournament?.club,team.center,team.organizingClub,team.hostClub].map(label).find(Boolean)||null;
   if(!center)missing.center++;
-  return {session,score,players,center,ffbRank:Number(row.rank)||null};
+  const numericId=v=>Number.isSafeInteger(Number(v))&&Number(v)>0?Number(v):null;
+  return {session,score,players,center,ffbRank:Number(row.rank)||null,ffbclubnetId:numericId(row.ffbclubnetId),simultaneousId:numericId(row.simultaneousId)};
  });
  return {rows:normalized,missing,complete:!missing.center&&!missing.series};
 }
