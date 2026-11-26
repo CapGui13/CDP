@@ -1,6 +1,6 @@
-import {pairRef,pairIndex,sportOverview,centerDetails,sessionRanking,scoreObjectives,pairSeries} from "./sport-dashboard.mjs";
-import {rankingHistory,isProjected} from "./ranking-tools.mjs";
-import {computeRanking} from "./ranking.mjs";
+import {pairRef,pairIndex,sportOverview,centerDetails,sessionRanking,scoreObjectives,pairSeries} from "./sport-dashboard.mjs?v=season-audit1";
+import {rankingHistory,isProjected} from "./ranking-tools.mjs?v=season-audit1";
+import {computeRanking} from "./ranking.mjs?v=season-audit1";
 export function createSportUI({document,storage,getState,openPair,render,pairDisplay,statuses,OptionCtor=globalThis.Option}){
  const $=id=>document.getElementById(id);
  const el=(tag,cls="",value="")=>{const n=document.createElement(tag);n.className=cls;n.textContent=value;return n;};
