@@ -1,4 +1,4 @@
-import {computeRanking,compareQuotaStages} from "./ranking.mjs";
+import {computeRanking} from "./ranking.mjs";
 import {qualificationDetails} from "./qualification-details.mjs";
 import {isProjected,isUncertain} from "./ranking-tools.mjs";
 import {playerName} from "./presentation.mjs";
@@ -32,12 +32,18 @@ export function sessionRanking(rows,result,session,center="",finale="all"){
  let last=null,rank=0;
  return ranked.map((x,i)=>{const units=Math.round(x.row.score*100);if(units!==last)rank=i+1;last=units;return {...x,rank};}).filter(x=>(!center||x.row.center===center)&&(finale==="all"||String(x.pair.finale)===String(finale)));
 }
-export function scoreObjectives(result,p){
+export function scoreObjectives(result,p,route="center"){
  const d=qualificationDetails(result,p);
- if(p.route==="direct"||d.boundary===null||!p.possible)return [];
- // Exact target rational from the actual boundary pair, not a rounded display value.
+ if(!p.possible)return [];
  const f=result.finals.find(f=>f.finale===p.finale),q=f?.quotas?.find(q=>q.center===p.center);
- const boundary=result.ranking.find(x=>x.key===q?.local?.at(-1));
+ let boundary=null;
+ if(route==="direct"){
+  if(!p.first||p.finale!==1||!f?.reserved||f.directTies?.length||f.direct.length!==f.reserved)return [];
+  boundary=result.ranking.find(x=>x.key===f.direct.at(-1));
+ }else{
+  if(p.route==="direct"||d.boundary===null)return [];
+  boundary=result.ranking.find(x=>x.key===q?.local?.at(-1));
+ }
  if(!boundary)return [];
  const existing=p.results.map(x=>x.units),remaining=6-result.completedSessions.length;
  const sumAt=(n,u)=>[...existing,...Array(n).fill(u)].sort((a,b)=>b-a).slice(0,4).reduce((a,b)=>a+b,0);
