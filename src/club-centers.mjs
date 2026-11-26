@@ -108,3 +108,48 @@ export async function discoverClubDirectory(client,onProgress=()=>{}){
  }
  return directory;
 }
+
+// Les résultats généraux contiennent déjà simultaneousId. Ne jamais parcourir
+// l'annuaire de tous les licenciés pour retrouver les centres d'une séance.
+export function participatingClubCodes(rows){
+ const counts=new Map();
+ for(const r of rows){
+  const code=String(r.simultaneousId??"");
+  if(/^54\d{5}$/.test(code)&&code!=="5400000")counts.set(code,(counts.get(code)||0)+1);
+ }
+ return counts;
+}
+export async function collectTargetedCenters(client,id,rows,onProgress=()=>{},directory=seedClubs){
+ const counts=participatingClubCodes(rows);
+ const codes=[...counts.keys()].sort((a,b)=>counts.get(b)-counts.get(a)||a.localeCompare(b));
+ const candidates=codes.length>=2?Object.fromEntries(codes.map(code=>[code,directory[code]||"Centre "+code])):directory;
+ const observations=[],errors=[],seen=new Set();
+ const work=rows.map(r=>({...r}));
+ let complete=false;
+ // Priorité aux codes effectivement présents ; au plus 15 clubs si ces codes manquent.
+ const entries=Object.entries(candidates).slice(0,codes.length>=2?100:15);
+ for(let i=0;i<entries.length;i++){
+  const [code,name]=entries[i];
+  try{
+   const payload=await client.clubSessionRanking(id,code);
+   const keys=clubPairKeys(payload,work);
+   if(codes.length>=2){
+    const expected=new Set(work.filter(r=>String(r.simultaneousId)===code).map(r=>pairKey(r.players)));
+    if(keys.size!==expected.size||[...keys].some(k=>!expected.has(k)))throw Error("Le code dans le classement général ne correspond pas au filtre FFB.");
+   }
+   if([...keys].some(k=>seen.has(k)))throw Error("Chevauchement entre centres.");
+   for(const k of keys)seen.add(k);
+   observations.push({code,name,keys});
+  }catch(e){errors.push({code,message:String(e.message||e)});}
+  const trial=work.map(r=>({...r}));
+  const report=assignClubCenters(trial,observations);
+  if(report.verified&&!report.conflicts){
+   for(let j=0;j<rows.length;j++){rows[j].center=trial[j].center;rows[j].centerCode=trial[j].centerCode;}
+  }
+  onProgress({done:i+1,total:entries.length,assigned:rows.filter(r=>r.center).length,pairs:rows.length});
+  if(seen.size===rows.length){complete=true;break;}
+  if(i===0&&errors[0]?.message.includes("tout le classement général"))break;
+ }
+ const verified=observations.filter(o=>o.keys.size).length>=2;
+ return {verified,clubs:observations.filter(o=>o.keys.size).length,remaining:rows.filter(r=>!r.center).length,covered:seen.size,complete,errors,conflicts:0,codesDetected:codes.length,unnamed:[...new Set(rows.filter(r=>r.centerCode&&r.center==="Centre "+r.centerCode).map(r=>r.centerCode))]};
+}
