@@ -28,8 +28,8 @@ export function orderedPlayers(players){
  return players.map(p=>({...p,formatted:playerName(p)})).sort((a,b)=>collator.compare(a.formatted.last,b.formatted.last)||collator.compare(a.formatted.first,b.formatted.first)||collator.compare(String(a.license),String(b.license)));
 }
 export function pairDisplay(players){return orderedPlayers(players).map(p=>p.formatted.display).join(" / ");}
-const cat1=new Set(["1N","1P","1C","1K","1T","2PR","2P","2C"]);
-const cat2=new Set(["2K","2T","3PR","3P","3C","3K","3T","4PR","4P","4C","4K","4T","NC"]);
+const cat1=new Set(["1N","1P","1C","1K","1T","2PR","2P","2C","1NH","1PH","1CH","1KH","1TH","2PRH","2MH"]);
+const cat2=new Set(["2K","2T","3PR","3P","3C","3K","3T","4PR","4P","4C","4K","4T","NC","2H","3H"]);
 export function displayCategory(players){
  if(players.some(p=>cat1.has(p.series)))return 1;
  return players.length===2&&players.every(p=>cat2.has(p.series))?2:null;
