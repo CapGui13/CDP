@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CDP · Coupe de Provence 2027</title>
+<style>
+:root{font:15px system-ui;color:#222d3a;background:#f3f5f8}*{box-sizing:border-box}body{margin:0}header{background:#213b60;color:white;padding:22px max(16px,calc((100vw - 1200px)/2))}h1{margin:0;font-size:clamp(23px,4vw,36px)}header p{margin:6px 0 0;color:#dce7f5}main{max-width:1200px;margin:auto;padding:16px;display:grid;gap:14px}section{background:white;border:1px solid #dfe4ec;border-radius:10px;padding:16px}h2{font-size:19px;margin:0 0 12px}p{line-height:1.5}label{display:grid;gap:4px;font-size:13px;font-weight:600}input,select,textarea,button{font:inherit;border:1px solid #bac5d2;border-radius:6px;padding:9px;min-width:0}button{background:#234e7e;color:white;cursor:pointer;border:none;font-weight:600}button.secondary{color:#234e7e;background:#e8eef5}button:disabled{opacity:.5;cursor:default}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}textarea{width:100%;font:13px monospace;min-height:180px}pre{max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f7;padding:12px;border-radius:6px;font-size:12px}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{text-align:left;padding:9px;border-bottom:1px solid #e8ebef}th{background:#edf1f6}td.num{text-align:right;font-variant-numeric:tabular-nums}.qualified{color:#147342;font-weight:600}.conditional{color:#866016;font-weight:600}.warning{color:#9a4f18}.muted{color:#667483}summary{cursor:pointer;font-weight:600}#message{white-space:pre-wrap;margin:8px 0}#message.error{color:#a22626}details{margin-top:12px}
+</style></head>
+<body><header><h1>Coupe de Provence 2027</h1><p>Classement provisoire · Studio CDP</p></header><main>
+<section><h2>Classement</h2><p id="overview" class="muted">Aucune séance importée.</p><div class="fields"><label>Vue<select id="view"><option value="all">Général</option><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Centre<select id="center"><option value="">Tous les centres</option></select></label><label>Recherche<input id="search" placeholder="Nom ou licence"></label></div><div class="scroll"><table><thead><tr><th>Rang</th><th>Paire</th><th>Centre</th><th>Finale</th><th>Jouées</th><th>Moyenne</th><th>Qualification provisoire</th></tr></thead><tbody id="ranking"></tbody></table></div><details><summary>Quotas et alertes réglementaires</summary><div id="quotas"></div></details><p class="muted">Projection non officielle selon les conventions documentées du dépôt. Les résultats d'une séance ne sont ajoutés qu'après validation de l'import.</p></section>
+<section><h2>Connexion et queries FFB</h2><div class="fields"><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username"></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password"></label><label>Clé Firebase FFB<input type="password" id="key" autocomplete="off"></label></div><div class="actions"><button id="connect">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button><span id="auth" class="muted">Non connecté</span></div><p class="muted">Identifiants envoyés à Firebase pour authentification, jeton transmis au relais FFB existant. Aucun secret enregistré dans les fichiers ou le stockage local.</p>
+<div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div>
+<div class="actions"><button id="sessions">Query : liste des séances (12)</button><button id="query">Query : résultats</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" role="status"></p><details open><summary>Réponse JSON / diagnostic du schéma</summary><p class="muted">Tu peux aussi coller ici le JSON obtenu dans une query FFB déjà connectée.</p><textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><span id="arrays" class="muted"></span></div></details>
+</section>
+<section><h2>Importer et normaliser une séance</h2><p>Renseigne les chemins des propriétés du JSON réel (ex. <code>players.0.ffbId</code>). Les noms des champs ne sont pas présumés tant que le schéma FFB n'a pas été confirmé.</p><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total (si disponible)<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping sur la réponse</button><button id="importAll">Récupérer toutes les pages et importer</button></div><p class="muted">L'import complet requiert un total FFB vérifié. Le classement précédent est conservé si une query, une conversion ou une validation échoue.</p><pre id="previewOutput">Aucun aperçu.</pre></section>
+<section><h2>Sauvegarde locale</h2><div class="actions"><button id="save" class="secondary">Exporter les séances normalisées</button><label>Restaurer un fichier JSON<input id="restore" type="file" accept=".json,application/json"></label></div><p class="muted">Les résultats normalisés sont sauvegardés dans ce navigateur après import. L'export est transportable sur un autre ordinateur. Pas de publication GitHub automatique.</p></section></main>
+<script type="module">
+import {makeFfbClient} from "./src/ffb-browser.mjs";
+import {computeRanking} from "./src/ranking.mjs";
+import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
+const $=id=>document.getElementById(id);
+let api=null,busy=false,state={completedSessions:[],rows:[]},result=null;
+const storage="cdp-2027-normalized-v1";
+const mapping={center:"",score:"",license1:"",license2:"",series1:"",series2:"",name1:"",name2:"",seriesValues:{}};
+$("mapping").value=JSON.stringify(mapping,null,2);
+function message(text,error=false){$("message").textContent=text;$("message").className=error?"error":"";}
+function config(){
+ const session=Number($("session").value),id=Number($("sessionId").value),page=Number($("page").value),size=Number($("pageSize").value);
+ if(!Number.isSafeInteger(id)||id<1||!Number.isInteger(page)||page<1||!Number.isInteger(size)||size<1||size>200)throw Error("Paramètres de query invalides");
+ return {session,id,page,size,route:$("route").value};
+}
+function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
+function run(fn){return async()=>{if(busy)return;busy=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;}};}
+function inspect(){const payload=JSON.parse($("raw").value);const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
+function showRaw(payload){$("raw").value=JSON.stringify(payload,null,2);inspect();}
+function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
+function validate(next){if(!Array.isArray(next.rows)||!Array.isArray(next.completedSessions))throw Error("Sauvegarde invalide");return computeRanking(next.rows,{completedSessions:next.completedSessions});}
+function commit(next){const checked=validate(next);localStorage.setItem(storage,JSON.stringify(next));state=next;result=checked;render();}
+function td(tr,value,cls){const el=document.createElement("td");el.textContent=value??"";if(cls)el.className=cls;tr.append(el);}
+const statuses={provisional:"Dans le quota",conditional:"Qualifiable sous condition",outside:"Hors quota",impossible:"Non qualifiable","center-ambiguous":"Centre ambigu","cutoff-tie":"Ex æquo","quota-uncertain":"Quota incertain"};
+function render(){
+ result=result||validate(state);
+ const selected=$("center").value;
+ $("center").replaceChildren(new Option("Tous les centres",""));
+ for(const c of [...new Set(state.rows.map(r=>r.center))].sort())$("center").add(new Option(c,c));
+ $("center").value=[...$("center").options].some(o=>o.value===selected)?selected:"";
+ $("overview").textContent=result.completedSessions.length+" / 6 séances importées · "+result.ranking.length+" paires distinctes";
+ const view=$("view").value,center=$("center").value,search=$("search").value.toLocaleLowerCase("fr");
+ const rows=result.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
+ $("ranking").replaceChildren();
+ for(const p of rows){
+ const tr=document.createElement("tr");td(tr,p.rank,"num");td(tr,p.players.map(x=>x.name||x.license).join(" / "));td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","num");td(tr,(statuses[p.status]||p.status)+(p.route?" · "+(p.route==="direct"?"directe":"centre"):""),p.status==="provisional"?"qualified":p.status==="conditional"?"conditional":"");$("ranking").append(tr);
+ }
+ $("quotas").replaceChildren();
+ for(const f of result.finals){const h=document.createElement("p");h.textContent="Finale "+f.finale+" · "+f.reserved+" place(s) directe(s) réservée(s)";$("quotas").append(h);for(const q of f.quotas||[]){const d=document.createElement("div");d.textContent=q.center+" : "+q.quota+" place(s)"+(q.quotaUncertain?" (quota incertain)":"")+(Number.isInteger(q.vacant)?" · "+q.vacant+" vacante(s)":"");$("quotas").append(d);}}
+ for(const w of result.warnings){const d=document.createElement("p");d.className="warning";d.textContent=w;$("quotas").append(d);}
+}
+function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+$("connect").onclick=run(async()=>{api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:$("key").value});$("auth").textContent="Connecté";message("Connexion FFB réussie.");}finally{$("password").value="";$("key").value="";}});
+$("disconnect").onclick=()=>{if(busy)return;api=null;$("auth").textContent="Non connecté";$("password").value="";$("key").value="";message("Session locale fermée.");};
+$("session").onchange=()=>{$("sessionId").value=$("session").value==="1"?"364548":"";};
+$("sessions").onclick=run(async()=>{const p=await requireApi().sessions(12,Number($("page").value),Number($("pageSize").value));showRaw(p);message("Liste des séances reçue.");});
+$("query").onclick=run(async()=>{const c=config();showRaw(await requireApi().sessionRanking(c.id,c.page,c.size,c.route));message("Réponse de la page "+c.page+" reçue.");});
+$("inspect").onclick=run(async()=>{inspect();message("Structure analysée.");});
+$("exportRaw").onclick=run(async()=>{download("cdp-query.json",JSON.parse($("raw").value));message("Export JSON lancé.");});
+$("preview").onclick=run(async()=>{const c=config(),raw=at(JSON.parse($("raw").value),$("listPath").value.trim());if(!Array.isArray(raw)||!raw.length)throw Error("Tableau de paires vide ou absent.");const rows=normalizeRows(raw,c.session,getMapping());computeRanking(rows,{completedSessions:[c.session]});$("previewOutput").textContent=JSON.stringify(rows.slice(0,3),null,2);message(rows.length+" lignes de cette page validées (pas encore importées).");});
+$("importAll").onclick=run(async()=>{const c=config(),client=requireApi(),m=getMapping(),listPath=$("listPath").value.trim(),totalPath=$("totalPath").value.trim();if(!totalPath)throw Error("Renseigne le chemin du total FFB avant l'import complet.");if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");const raw=await collectPages((p,s)=>client.sessionRanking(c.id,p,s,c.route),{listPath,totalPath,pageSize:c.size});if(!raw.length)throw Error("Séance vide.");const rows=normalizeRows(raw,c.session,m);commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...rows]});message(rows.length+" paires importées pour S"+c.session+".");});
+$("save").onclick=()=>download("cdp-2027-seances.json",state);
+$("restore").onchange=run(async()=>{const file=$("restore").files[0];if(!file)return;const next=JSON.parse(await file.text());commit(next);message("Sauvegarde restaurée.");});
+for(const id of ["view","center","search"])$(id).addEventListener(id==="search"?"input":"change",render);
+try{const cached=localStorage.getItem(storage);if(cached){const next=JSON.parse(cached);result=validate(next);state=next;}}catch(e){message("Sauvegarde locale illisible : "+e.message,true);}
+render();
+</script></body></html>
