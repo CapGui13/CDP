@@ -40,6 +40,18 @@ Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md) et [audit réglementair
 
 Les filtres se combinent avec la recherche, la finale et le centre. Les en-têtes sont cliquables pour trier les colonnes ; les rangs réels ne sont jamais renumérotés après filtrage. La fiche de paire affiche les rangs, seuils locaux certains, conditions de participation, scores retenus et historique cumulatif des séances. Les mouvements de qualification sont disponibles dès la deuxième séance validée. Le simulateur compare les scores hypothétiques aux adversaires et seuils actuels, à quotas et voies de qualification figés, sans enregistrer ni publier les hypothèses. Sur téléphone, la vue compacte conserve rang, paire et moyenne ; le bouton « Toutes les colonnes » rétablit le tableau complet.
 
+## Tableau de bord sportif et suivi individuel
+
+Le tableau de bord affiche les paires et joueurs distincts, les centres, les places projetées par finale et le calendrier des six séances. Les fiches centres distinguent la fréquentation réelle (lieu de jeu) des paires rattachées pour la qualification ; les tables correspondent au nombre de paires divisé par deux. Les quotas historiques sont recalculés après chaque séance validée. Les performances par séance conservent les rangs de la séance au général, même en filtrant par centre ou catégorie.
+
+Les fiches de paire présentent deux graphiques (scores/moyennes/seuil local et rang général/local), les valeurs exactes et les objectifs à seuil constant. L'objectif est le score identique minimal au centième à réaliser lors de chacune des séances futures choisies, avec la condition de quatre participations et un dépassement strict du seuil actuel. Les voies directe et locale sont distinguées lorsque leurs frontières sont certaines ; aucune cible inventée en cas d'incertitude. Les scores simulés ne sont jamais publiés.
+
+Les favoris sont conservés dans le navigateur, sans compte ; la comparaison permet de sélectionner jusqu'à quatre paires. Le lien partageable utilise exclusivement les noms publics normalisés, indépendamment des pseudonymes renouvelés lors des publications. Les homonymes exacts sont signalés et ne peuvent pas être résolus arbitrairement ; un changement de nom peut rendre un ancien lien introuvable. Le classement filtré peut être imprimé ou enregistré en PDF via la boîte de dialogue du navigateur (A4 paysage). Le thème clair/sombre est mémorisé localement.
+
+La PWA utilise un manifeste, une icône vectorielle et un service worker avec priorité réseau. Le cache ne contient que les ressources publiques explicitement autorisées et exclut les requêtes authentifiées, les API externes et les sauvegardes privées. En cas de lecture de la dernière publication hors connexion, un avertissement est affiché. Compatibilité d'installation, impression et rendu visuel à valider sur un véritable navigateur.
+
+Recette du lot : 11 tests ciblés exécutés dans le harnais JavaScript simulé, dont 6 scénarios d'interface et 5 tests de statistiques. Contrôle de S1 : 346 paires, 692 joueurs, 16 centres, 60 projections F1 et 58 F2, 2 cas incertains F2. La paire 26 nécessite 60,38 % sur trois séances futures ou 60,22 % sur quatre/cinq, pour dépasser le seuil local actuel de 60,21 %. Les données publiées et le moteur de qualification n'ont pas été modifiés.
+
 ## Tests
 
 `node --test tests/*.test.mjs`
