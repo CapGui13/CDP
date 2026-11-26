@@ -307,7 +307,7 @@ import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
 import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit2";
-import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
+import {pairDisplay,pairDisplayWithSeries,displayCategory} from "./src/presentation.mjs?v=series1";
 import {computeRanking,compareQuotaStages} from "./src/ranking.mjs?v=quota-history1";
 import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=real-s1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
@@ -384,7 +384,7 @@ function pairCell(tr,p){
  symbol.textContent=selected?"🏆":uncertain?"?":"";
  symbol.title=selected?(p.status==="conditional"?"Qualifiable selon la projection ; quatre séances ensemble requises.":"Dans le quota projeté ; condition de participation remplie."):uncertain?"Qualification à départager.":"";
  cell.append(symbol);
- const name=document.createElement("button");name.type="button";name.className="pair-name-link";name.textContent=pairDisplay(p.players);name.title="Afficher la fiche et le détail de qualification";name.onclick=()=>openPair(p);cell.append(name);tr.append(cell);
+ const name=document.createElement("button");name.type="button";name.className="pair-name-link";name.textContent=pairDisplayWithSeries(p.players);name.title="Afficher la fiche et le détail de qualification";name.onclick=()=>openPair(p);cell.append(name);tr.append(cell);
 }
 function qualificationCell(tr,p){
  const selected=projected(p),uncertain=uncertainQualification(p);
@@ -397,7 +397,7 @@ function qualificationCell(tr,p){
 
 function openPair(p){
  const d=detailMap.get(p.key)||qualificationDetails(result,p);
- $("pairTitle").textContent=pairDisplay(p.players);
+ $("pairTitle").textContent=pairDisplayWithSeries(p.players);
  const body=$("pairDetails");body.replaceChildren();
  const sub=document.createElement("p");sub.className="muted";sub.textContent=(p.center||"Centre à déterminer")+" · Finale "+p.finale;body.append(sub);
  if(!publisher)sportUI?.pairActions(body,p);
@@ -488,7 +488,7 @@ function render(){
   const all=provisionalRanking(state);
   $("overview").textContent=all.sessions.length+" / 6 séances collectées · "+all.ranking.length+" paires · "+all.ranking.filter(p=>p.finale!==null).length+" catégorisées";
   const list=all.ranking.filter(p=>(view==="all"||String(p.finale)===view)&&(!center||p.center===center)&&(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search))));
-  for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(p.finale??"unknown");td(tr,p.rank,"numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,p.finale??"—");td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);}
+  for(const p of list){const tr=document.createElement("tr");tr.className="player-row category-"+(p.finale??"unknown");td(tr,p.rank,"numeric");td(tr,pairDisplayWithSeries(p.players),"name");td(tr,p.center||"À identifier");td(tr,p.finale??"—");td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);}
   $("empty").hidden=list.length>0;
   $("quotas").textContent="Classement de travail : "+all.validated+" séance(s) validée(s). Les qualifications sont suspendues tant que les collectes en attente ne sont pas validées.";
   return;
@@ -498,7 +498,7 @@ function render(){
   $("overview").textContent="Aperçu FFB sauvegardé S"+pp.session+" · "+pp.rows.length+" paires · qualification non calculée";
   const list=pp.rows.filter(p=>(!search||p.players.some(x=>(x.name+" "+x.license).toLocaleLowerCase("fr").includes(search)))&&(!center||p.center===center));
   $("empty").hidden=list.length>0;
-  {for(const p of list.filter(p=>view==="all"||String(displayCategory(p.players))===view)){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplay(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}$("empty").hidden=$("ranking").children.length>0;}
+  {for(const p of list.filter(p=>view==="all"||String(displayCategory(p.players))===view)){const tr=document.createElement("tr");tr.className="player-row category-"+(displayCategory(p.players)??"unknown");td(tr,p.ffbRank??"—","numeric");td(tr,pairDisplayWithSeries(p.players),"name");td(tr,p.center||"À identifier");td(tr,displayCategory(p.players)??"—");td(tr,"1/6");td(tr,"—");td(tr,"À vérifier","conditional");for(let n=1;n<=6;n++)td(tr,n===pp.session?p.score.toFixed(2).replace(".",",")+" %":"—","numeric");$("ranking").append(tr);}$("empty").hidden=$("ranking").children.length>0;}
   $("quotas").textContent="Calcul suspendu pour cet aperçu : "+(pp.reasons?.join(" ; ")||"données à valider")+". Le classement enregistré est conservé.";
   return;
  }
