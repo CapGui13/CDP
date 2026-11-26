@@ -138,6 +138,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     ranking,
     registration,
     sessions: (id,currentPage=1,maxPerPage=80) => call('www', `api/competitions/simultaneous/${id}/sessions`, {currentPage,maxPerPage}),
+    fullSessionRanking: id => call('www', `api/results/sessions/${id}/ranking`),
     sessionRanking: (id, currentPage=1, maxPerPage=80, route='results') => { if (!['results','competitions'].includes(route)) throw Error('Route invalide'); return call('www', `api/${route}/sessions/${id}/ranking`, {paginate:true,currentPage,maxPerPage}); }
   };
 }
