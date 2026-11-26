@@ -179,22 +179,22 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 <section class="panel"><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
 <div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
 <dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog>
-<h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button id="findCenters" class="secondary">Identifier les centres de jeu</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" class="notice" role="status"></p>
+<h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button id="findCenters" class="secondary">Identifier les centres de jeu</button><button id="cancelSync" class="secondary" disabled>Arrêter</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div><p id="message" class="notice" role="status"></p>
 <details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><button class="secondary" id="schemaExport">Exporter le schéma (sans données personnelles)</button><span id="arrays" class="muted"></span></div><p id="schemaStatus" class="muted" role="status"></p>
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details>
 </div></section>
 <section class="panel"><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><a class="btn" href="https://github.com/CapGui13/CDP/upload/main/data" target="_blank" rel="noopener noreferrer">Publier sur GitHub</a><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
 </main>
 <script type="module">
-import {makeFfbClient} from "./src/ffb-browser.mjs?v=clubs2";
-import {collectTargetedCenters} from "./src/club-centers.mjs?v=2";
-import {discoverSessions,collectCommitteePeople,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
-import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=2";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
+import {syncSession} from "./src/session-sync.mjs?v=audit1";
+import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
+import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
 import {provisionalRanking} from "./src/provisional.mjs?v=1";
-import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=clubs1";
-import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=iv2";
-import {computeRanking} from "./src/ranking.mjs?v=sync5";
-import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=1";
+import {readRanking,normalizeFfbRanking,extractSeries} from "./src/auto-import.mjs?v=audit1";
+import {pairDisplay,displayCategory} from "./src/presentation.mjs?v=audit1";
+import {computeRanking} from "./src/ranking.mjs?v=audit1";
+import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persistence.mjs?v=audit1";
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const FFB_CLIENT_CONFIG="AIzaSyBjiLwewyM5PhXhfDSir5Cxvut0Yg4lYFQ";
@@ -228,7 +228,8 @@ function config(){
 }
 function requireApi(){if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
 function startLocal(){if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
-function run(fn){return async()=>{if(busy)return;busy=true;$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(e.message||"Erreur",true);}finally{busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
+let operation=null;
+function run(fn,{network=false}={}){return async()=>{if(busy)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),120000);}$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de 2 minutes). Données déjà collectées conservées.":e.message||"Erreur",true);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=rawPayload();const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload,kind="liste"){$("raw").value=JSON.stringify(payload,null,2);rawKind=kind;inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
@@ -297,7 +298,7 @@ async function refreshSessions(client){
  const manual=$("sessionId").value,selected=Number($("session").value);
  const size=80,first=await client.sessions(12,1,size);
  const pages=[first],total=listTotal(first);
- if(total!==null)for(let page=2;page<=Math.min(25,Math.ceil(total/size));page++)pages.push(await client.sessions(12,page,size));
+ if(total!==null)for(let page=2;page<=Math.min(6,Math.ceil(total/size));page++)pages.push(await client.sessions(12,page,size));
  const collected=new Map([[1,364548]]),conflicts=new Set();
  for(const payload of pages){const found=discoverSessions(payload);for(const date of found.conflicts)conflicts.add(date);for(const item of found.sessions){if(collected.has(item.number)&&collected.get(item.number)!==item.ffbId)conflicts.add(item.date);else collected.set(item.number,item.ffbId);}}
  const dates=["2026-11-25","2027-01-27","2027-02-24","2027-03-24","2027-04-14","2027-05-05"];
@@ -307,107 +308,36 @@ async function refreshSessions(client){
  if(conflicts.size)message("Séances ambiguës : "+[...conflicts].join(", "),true);
  return first;
 }
-$("sessions").onclick=run(async()=>{const p=await refreshSessions(requireApi());showRaw(p);message(discovered.size+" séance(s) officielle(s) identifiée(s), voir le sélecteur.");});
+$("sessions").onclick=run(async()=>{const p=await refreshSessions(requireApi());showRaw(p);message(discovered.size+" séance(s) officielle(s) identifiée(s), voir le sélecteur.");},{network:true});
 async function syncOne(c,client,{centersOnly=false}={}){
  if(c.session===1&&c.id!==364548)throw Error("L'identifiant de S1 doit être 364548.");
- message("FFB : récupération du classement complet S"+c.session+"…");
- let payload,direct=true;
- try{payload=await client.fullSessionRanking(c.id);}catch(e){direct=false;message("Query directe refusée, tentative paginée…");payload=await client.sessionRanking(c.id,1,c.size,c.route);}
- showRaw(payload,"classement");
- saveRankingSchema(payload,c.session,c.id);
- let {rows:raw,total}=readRanking(payload);
- if(total!==null&&raw.length<total){
-  const paths=arrayPaths(payload).filter(path=>at(payload,path)===raw);
-  const totalPath=["total","totalCount","totalItems","data.total","pagination.total_items","pagination.totalItems","pagination.total","meta.total"].find(p=>Number(at(payload,p))===total);
-  if(paths.length!==1||!totalPath)throw Error("Pagination détectée mais structure non reconnue. Exporte la réponse JSON.");
-  message("FFB : récupération des "+total+" paires…");
-  raw=await collectPages((p,size)=>client.sessionRanking(c.id,p,size,c.route),{listPath:paths[0],totalPath,pageSize:c.size});
- }
- const normalized=normalizeFfbRanking(raw,c.session);
- startLocal();
- const rows=normalized.rows;
- const known=new Map(),knownCenters=new Map();
- const pairKey=row=>JSON.stringify(row.players.map(p=>p.license).sort());
- for(const previous of [...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)]){
-  if(previous.session===c.session&&previous.center)knownCenters.set(pairKey(previous),{center:previous.center,centerCode:previous.centerCode});
-  for(const p of previous.players){
-   const old=known.get(p.license)||{};const merged={...old,...p};for(const k of ["series","personId","firstName","lastName"])if(!p[k]&&old[k])merged[k]=old[k];known.set(p.license,merged);
-  }
- }
- for(const row of rows){if(!row.center&&knownCenters.has(pairKey(row)))Object.assign(row,knownCenters.get(pairKey(row)));for(const p of row.players){const old=known.get(p.license)||{};for(const k of ["series","personId","firstName","lastName"])if(!p[k]&&old[k])p[k]=old[k];}}
- const reasonsFor=()=>{const reasons=[];const missingCenters=rows.filter(r=>!r.center).length,missingSeries=rows.flatMap(r=>r.players).filter(p=>!p.series).length;if(missingCenters)reasons.push(missingCenters+" centres organisateurs manquants");if(missingSeries)reasons.push(missingSeries+" séries de joueurs manquantes");if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");return reasons;};
- const saveProgress=()=>storePreview({session:c.session,rows,reasons:reasonsFor()});
- $("view").value="all";$("center").value="";
- // Sauvegarder d'abord les résultats réels, puis les enrichir par petits lots.
- if(reasonsFor().length)saveProgress();
- let lookupNote="",centerNote="";
- if(rows.some(r=>!r.center)){
-   // Ne jamais appliquer de nouveaux rattachements si le contrôle croisé échoue.
-   const work=rows.map(r=>({...r}));
-   try{
-     const report=await collectTargetedCenters(client,c.id,work,({done,total,assigned,pairs})=>{
-       for(let i=0;i<rows.length;i++){rows[i].center=work[i].center;rows[i].centerCode=work[i].centerCode;}
-       if(done%3===0||done===total)saveProgress();
-       message("FFB · centres : "+done+"/"+total+" clubs contrôlés · "+assigned+"/"+pairs+" paires rattachées.");
-     });
-     if(report.verified&&!report.conflicts){
-       for(let i=0;i<rows.length;i++){rows[i].center=work[i].center;rows[i].centerCode=work[i].centerCode;}
-       // Une réponse directe non paginée et son partitionnement exhaustif par club constituent le contrôle de couverture.
-       if(total===null&&direct&&Array.isArray(payload)&&report.complete&&report.remaining===0&&report.errors.length===0)total=raw.length;
-       centerNote=(rows.length-report.remaining)+"/"+rows.length+" paires rattachées à un centre · "+report.clubs+" clubs confirmés."+(report.unnamed.length?" Codes sans libellé officiel : "+report.unnamed.join(", ")+".":"")+centerNote;
-     }else centerNote="Filtre club non confirmé : "+(report.errors[0]?.message|| (report.conflicts?"chevauchement entre clubs":"moins de deux clubs distincts"))+". Aucun rattachement nouveau appliqué.";
-     if(report.errors.length&&report.verified)centerNote+=" "+report.errors.length+" requête(s) club non exploitables.";
-     saveProgress();
-   }catch(e){centerNote="Centres : "+(e.message||"échec de collecte");}
- }
- if(!centersOnly&&rows.flatMap(r=>r.players).filter(p=>!p.series&&!p.personId).length>0){
-  try{
-   const current=await client.currentSeason();
-   if(Number(current?.id)!==38)throw Error("Saison fédérale non confirmée.");
-   await collectCommitteePeople(client,rows,({page,count,remaining})=>{
-    if(page%5===0||remaining===0)saveProgress();
-    message("FFB · recherche groupée : "+count+" séries identifiées, "+remaining+" joueurs encore à identifier (page "+page+").");
-   });
-   saveProgress();
-  }catch(e){lookupNote="Recherche groupée : "+(e.message||"échec");}
- }
- const todo=rows.flatMap(r=>r.players).filter(p=>!p.series&&p.personId);
- if(!centersOnly&&todo.length){
-   try{
-     const season=await client.currentSeason();
-     if(Number(season?.id)!==38)throw Error("Saison FFB 2026–2027 non confirmée (identifiant attendu 38).");
-     let done=0,found=0;
-     for(let i=0;i<todo.length;i+=4){
-       await Promise.all(todo.slice(i,i+4).map(async p=>{
-         try{const data=await client.ranking(p.personId,38);const series=extractSeries(data?.data??data);if(series){p.series=series;found++;}}catch(e){if(!lookupNote)lookupNote=e.message||"Fiche inaccessible";}
-         finally{done++;}
-       }));
-       if(i%20===0||done===todo.length)saveProgress();
-       message("FFB : séries récupérées "+found+" · "+done+"/"+todo.length+" fiches consultées.");
-
-     }
-     saveProgress();
-   }catch(e){lookupNote=e.message||"Enrichissement impossible";}
- }else if(!centersOnly&&rows.some(r=>r.players.some(p=>!p.series)))lookupNote="Identifiants internes des joueurs absents de la réponse.";
- normalized.missing.center=rows.filter(r=>!r.center).length;
- normalized.missing.series=rows.flatMap(r=>r.players).filter(p=>!p.series).length;
- normalized.complete=!normalized.missing.center&&!normalized.missing.series;
- if(!normalized.complete || total===null){
-  const reasons=[];
-  if(normalized.missing.center)reasons.push(normalized.missing.center+" centres organisateurs manquants");
-  if(normalized.missing.series)reasons.push(normalized.missing.series+" séries de joueurs manquantes");
-  if(total===null)reasons.push("total FFB non indiqué (exhaustivité à vérifier)");
-  $("view").value="all";$("center").value="";
-  const kept=storePreview({session:c.session,rows:normalized.rows,reasons});
-  message((kept?"Nouvelle réponse plus courte : l'aperçu précédent de "+pendingPreview.rows.length+" paires a été conservé.":raw.length+" paires collectées et sauvegardées. "+normalized.rows.filter(r=>displayCategory(r.players)!==null).length+" paires catégorisées. Qualifications non calculées : "+reasons.join(" ; ")+".")+(centerNote?" "+centerNote:"")+(lookupNote?" "+lookupNote:""));
-  return;
- }
- commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...normalized.rows]});
- message(raw.length+" paires importées et sauvegardées pour S"+c.session+" ; classement recalculé. "+centerNote);
+ message("S"+c.session+" : récupération du classement général…");
+ const cache=publicMode?[]:[...state.rows,...Object.values(state.previews).flatMap(p=>p.rows)];
+ const previousCoverage=publicMode?null:state.previews[c.session]?.coverage;
+ const report=await syncSession({client,session:c.session,id:c.id,cache,previousCoverage,centersOnly,signal:operation?.signal,
+ onRaw:payload=>{showRaw(payload,"classement");saveRankingSchema(payload,c.session,c.id);},
+ onCheckpoint:preview=>{startLocal();storePreview(preview);},
+ onProgress:text=>message("S"+c.session+" · "+text)});
+ if(report.complete){
+  commit({completedSessions:[...new Set([...state.completedSessions,c.session])].sort(),rows:[...state.rows.filter(r=>r.session!==c.session),...report.rows]});
+ } 
+ const summary=report.rows.length+" paires sauvegardées · "+report.centers+" centres confirmés sur "+report.rows.length+" paires · "+report.categories+"/"+(report.rows.length*2)+" séries.";
+ message(summary+(report.complete?" Séance validée, classement recalculé.":" Qualifications en attente : "+report.reasons.join(" ; ")+".")+(report.errors.length?" Diagnostic : "+report.errors.slice(0,3).join(" ; "):""));
+ return {complete:report.complete,summary,reasons:report.reasons,errors:report.errors};
 }
-$("findCenters").onclick=run(async()=>{await syncOne(config(),requireApi(),{centersOnly:true});});
-$("query").onclick=run(async()=>{const client=requireApi();try{await refreshSessions(client);}catch(e){message("Découverte FFB indisponible : "+e.message);}await syncOne(config(),client);});
-$("syncAll").onclick=run(async()=>{const client=requireApi();try{await refreshSessions(client);}catch(e){message("Découverte FFB indisponible : "+e.message);}const failures=[];for(const [session,id] of [...discovered].sort((a,b)=>a[0]-b[0])){try{await syncOne({session,id,size:80,route:"results"},client);}catch(e){failures.push("S"+session+" : "+e.message);}}message("Actualisation terminée : "+state.completedSessions.length+" séances validées, "+Object.keys(state.previews).length+" aperçus sauvegardés."+(failures.length?" Erreurs : "+failures.join(" ; "):""),!!failures.length);});
+$("cancelSync").onclick=()=>{if(operation){operation.abort();message("Arrêt demandé. Les données déjà sauvegardées sont conservées.");}};
+$("findCenters").onclick=run(async()=>{await syncOne(config(),requireApi(),{centersOnly:true});},{network:true});
+$("query").onclick=run(async()=>{const client=requireApi();await syncOne(config(),client);},{network:true});
+$("syncAll").onclick=run(async()=>{
+ const client=requireApi(),failures=[],reports=[];
+ try{await refreshSessions(client);}catch(e){if(operation?.signal.aborted)throw e;failures.push("Calendrier : "+e.message);}
+ for(const [session,id] of [...discovered].sort((a,b)=>a[0]-b[0])){
+  if(operation?.signal.aborted)break;
+  try{const report=await syncOne({session,id},client);reports.push("S"+session+" : "+report.summary+(report.reasons.length?" "+report.reasons.join(" ; "):"")+(report.errors.length?" · "+report.errors[0]:""));}
+  catch(e){failures.push("S"+session+" : "+e.message);if(operation?.signal.aborted||[401,403,429].includes(e.status)||e.status>=500)break;}
+ }
+ message((operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de 2 minutes). ":"Actualisation terminée. ")+reports.join("\n")+(failures.length?"\n"+failures.join(" ; "):""),!!failures.length);
+},{network:true});
 $("inspect").onclick=run(async()=>{inspect();message("Structure analysée.");});
 $("schemaExport").onclick=run(async()=>{
  if(!rankingSchema){
