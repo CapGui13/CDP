@@ -334,7 +334,9 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 .public-clean :is(#rankingTable,.projection-table) :is(th,td){text-align:center!important;vertical-align:middle}
 .public-clean :is(#rankingTable,.projection-table) .pair-name-link{text-align:center;white-space:normal;overflow-wrap:anywhere}
 .public-clean :is(#rankingTable,.projection-table) .pair-series{display:grid;grid-template-columns:3em auto 3em;justify-content:center;align-items:center;margin:2px auto 0;text-align:center;white-space:nowrap}
-.public-clean :is(#rankingTable,.projection-table) .series-code{text-align:center}
+.public-clean :is(#rankingTable,.projection-table) .series-code{display:inline-flex;align-items:center;justify-content:center;gap:1px;text-align:center;line-height:1.25;min-height:1.4em;white-space:nowrap}
+.public-clean :is(#rankingTable,.projection-table) .series-suit{display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle}
+.public-clean :is(#rankingTable,.projection-table) .series-separator{line-height:1.25;align-self:center}
 .public-clean :is(#rankingTable,.projection-table) .name{white-space:normal;overflow-wrap:anywhere}
 .public-clean #rankingTable,.public-clean .projection-table{min-width:0!important;table-layout:auto}
 .public-clean #rankingTable :is(th,td){min-width:0;max-width:none;overflow-wrap:anywhere}
