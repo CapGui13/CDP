@@ -38,6 +38,11 @@ Voir [rapport d'audit complet](docs/AUDIT-2026-11-26.md) et [audit réglementair
 
 ## Consultation du classement public
 
+Depuis la refonte du 27 novembre, l'adresse canonique reste unique et ouvre par défaut le classement. Quatre rubriques sont disponibles sans navigation vers une autre URL : **Classement** (recherche, centre, finale, favoris, comparaison, export PDF/Excel), **Saison** (indicateurs, calendrier, statistiques des centres et séances), **Qualifications** (quotas, variations, avertissements) et **Outils** (parcours individuels, partenaires, records, simulation globale, bulletin et préparation des finales). Les filtres avancés sont repliés par défaut et signalés lorsqu'ils sont actifs. Les filtres et le tri sont conservés lors d'un changement de rubrique. En gestion, la navigation publique est masquée ; le classement, les quotas, la synchronisation et la sauvegarde restent disponibles. La vue compacte mobile et les séries colorées sont conservées.
+
+Recette ergonomique : 10 tests d'interface réussis dans le DOM simulé, dont navigation exclusive, persistance des filtres, réinitialisation et isolation de la gestion. Les contrôles Chromium/axe sont adaptés à la navigation et vérifient aussi l'absence de débordement horizontal au niveau de la page mobile. Déploiement et rendu réel non confirmés : l'accès réseau à GitHub Pages n'était pas disponible dans l'environnement de recette.
+
+
 Les filtres se combinent avec la recherche, la finale et le centre. Les en-têtes sont cliquables pour trier les colonnes ; les rangs réels ne sont jamais renumérotés après filtrage. La fiche de paire affiche les rangs, seuils locaux certains, conditions de participation, scores retenus et historique cumulatif des séances. Les mouvements de qualification sont disponibles dès la deuxième séance validée. Le simulateur compare les scores hypothétiques aux adversaires et seuils actuels, à quotas et voies de qualification figés, sans enregistrer ni publier les hypothèses. Sur téléphone, la vue compacte conserve rang, paire et moyenne ; le bouton « Toutes les colonnes » rétablit le tableau complet.
 
 ## Tableau de bord sportif et suivi individuel
