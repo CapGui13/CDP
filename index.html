@@ -372,24 +372,32 @@ main{display:grid;gap:18px}.panel+.panel{margin-top:0}.panel-inner{padding:19px 
 #quickUpdateStatus[data-state="success"] strong{color:var(--success,#8bf0c9)}
 #quickUpdateStatus[data-state="error"] strong{color:#ffb5c0}
 @media print{#quickUpdateStatus{display:none!important}}
+.public-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+#projectionPanel .quota-table :is(th,td){text-align:center;vertical-align:middle}
+#projectionPanel .quota-area{padding:14px}
+#ffbControls[hidden],#ffbNotice[hidden],#quickUpdateStatus #cancelSync:disabled{display:none!important}
+#ffbControls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#ffbControls button{font-size:11px;padding:6px 9px}
+#ffbNotice{font-size:12px;color:var(--muted);margin:0}
+@media print{#projectionPanel,#ffbNotice{display:none!important}}
 </style></head>
 <body class="compact-view">
-<header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="themeSwitch" hidden class="secondary" type="button">Thème clair</button><button id="installApp" hidden class="secondary" type="button">Installer</button><button id="manageOpen" class="secondary" type="button" hidden>Admin</button><button id="quickUpdate" class="primary" type="button" hidden>MAJ</button><button id="manageClose" class="secondary" type="button" hidden>User</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
+<header class="app-header"><div class="shell header-content"><div class="brand-block"><div class="logo" aria-hidden="true">♠</div><div><span class="brand-eyebrow">CDP / FFB</span><h1>Ranking · Coupe de Provence</h1></div></div><div class="header-side"><button id="themeSwitch" hidden class="secondary" type="button">Thème clair</button><button id="installApp" hidden class="secondary" type="button">Installer</button><button id="manageOpen" class="secondary" type="button" hidden>Admin</button><div id="ffbControls" hidden><span id="auth" class="status-pill">Non connecté</span><button id="openLogin" class="secondary" type="button">Connexion FFB</button><button id="disconnect" class="secondary" type="button" hidden>Déconnexion FFB</button></div><button id="quickUpdate" class="primary" type="button" hidden>MAJ</button><button id="manageClose" class="secondary" type="button" hidden>User</button><span class="season-pill">Saison <b>2026–2027</b></span></div></div></header>
 <main class="shell main-shell">
-<section id="quickUpdateStatus" hidden aria-label="Progression de la mise à jour"><div class="update-head"><strong id="quickUpdateTitle" role="status"></strong><span id="quickUpdateCount"></span></div><progress id="quickUpdateProgress" max="1" value="0" aria-label="Étapes terminées"></progress><div id="quickUpdateDetail" class="muted"></div></section>
-<nav id="publicNav" class="public-nav" aria-label="Navigation principale"><button id="navRanking" type="button" aria-controls="rankingPanel" aria-pressed="true">Classement</button><button id="navSeason" hidden type="button" aria-controls="sportPanel" aria-pressed="false">Saison</button><button id="navQuotas" type="button" aria-controls="quotaPanel" aria-pressed="false">Qualifications</button><button id="navTools" hidden type="button" aria-controls="racePanel" aria-pressed="false">Outils</button></nav><div id="publicFeedback" class="public-feedback"><p id="sportNotice" class="muted" role="status"></p></div><section id="rankingPanel" class="panel rankings-panel">
+<section id="quickUpdateStatus" hidden aria-label="Progression de la mise à jour"><div class="update-head"><strong id="quickUpdateTitle" role="status"></strong><span id="quickUpdateCount"></span></div><progress id="quickUpdateProgress" max="1" value="0" aria-label="Étapes terminées"></progress><div id="quickUpdateDetail" class="muted"></div><div class="actions"><button id="cancelSync" class="secondary" disabled>Arrêter</button></div></section>
+<p id="ffbNotice" role="status" hidden></p><nav id="publicNav" class="public-nav" aria-label="Navigation principale"><button id="navRanking" type="button" aria-controls="rankingPanel" aria-pressed="true">Classement</button><button id="navSeason" hidden type="button" aria-controls="sportPanel" aria-pressed="false">Saison</button><button id="navQuotas" type="button" aria-controls="quotaPanel" aria-pressed="false">Qualifications</button><button id="navProjection" type="button" aria-controls="projectionPanel" aria-pressed="false">Projection</button><button id="navTools" hidden type="button" aria-controls="racePanel" aria-pressed="false">Outils</button></nav><div id="publicFeedback" class="public-feedback"><p id="sportNotice" class="muted" role="status"></p></div><section id="rankingPanel" class="panel rankings-panel">
 <div class="controls"><div class="ranking-top-line"><div class="fields filters-row"><label id="publicSessionLabel">Classement<select id="publicSession"><option value="all">Général</option><option value="1">Séance 1</option><option value="2">Séance 2</option><option value="3">Séance 3</option><option value="4">Séance 4</option><option value="5">Séance 5</option><option value="6">Séance 6</option></select></label><label id="legacyViewLabel" hidden>Classement<select id="view" class="input"><option value="all">Général</option><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label id="centerLabel">Centre<select id="center" class="input"><option value="">Tous les centres</option></select></label><label>Recherche<input id="search" class="input" type="search" placeholder="Rechercher un joueur ou un n° FFB"></label></div><div class="ranking-meta-line"><span id="overview" class="meta-item">Aucune séance importée</span><p id="publicNotice" class="public-notice muted" hidden role="status"></p></div></div><details id="advancedFilters" class="ranking-advanced"><summary>Filtres et tris avancés</summary><div class="fields advanced-filter-grid"><label>Qualification<select id="qualFilter"><option value="all">Toutes les paires</option><option value="projected">🏆 Dans la projection</option><option value="direct">Qualifications directes</option><option value="center">Qualifications par centre</option><option value="near">Premières hors quota</option><option value="uncertain">Cas incertains</option><option value="outside">Hors projection</option><option value="in">Entrées dans la projection</option><option value="out">Sorties de la projection</option><option value="new">Nouvelles paires</option></select></label><label>Trier par<select id="sortKey"><option value="rank">Rang général</option><option value="categoryRank">Rang dans la catégorie</option><option value="centerRank">Rang dans le centre (cat.)</option><option value="name">Noms</option><option value="center">Centre</option><option value="finale">Finale</option><option value="count">Séances jouées</option><option value="average">Moyenne</option><option value="qualification">Qualification</option><option value="delta">Progression du rang</option><option value="s1">Score S1</option><option value="s2">Score S2</option><option value="s3">Score S3</option><option value="s4">Score S4</option><option value="s5">Score S5</option><option value="s6">Score S6</option></select></label><label>Ordre<select id="sortDirection"><option value="asc">Croissant / A–Z</option><option value="desc">Décroissant / Z–A</option></select></label></div></details><div class="ranking-toolbar"><span id="filteredCount" role="status" class="muted"></span><div id="rankingPublicActions" class="ranking-public-actions"><button id="favoritesOnly" hidden type="button" class="secondary">☆ Favoris</button><button id="compareOpen" hidden type="button" class="secondary">Comparer les paires</button><details id="exportMenu" class="export-menu"><summary>Exporter</summary><div class="export-options"><button id="printRanking" class="secondary" type="button">Imprimer / PDF</button><button id="raceExcel" class="secondary" type="button">Exporter le classement Excel</button></div></details></div><button id="resetFilters" class="secondary" type="button">Réinitialiser</button><button id="mobileView" class="secondary" type="button">Toutes les colonnes</button></div><p id="historySummary" class="muted history-summary"></p></div>
 <div class="qualification-legend"><span><span class="pair-qualification trophy-gold">🏆</span> Qualifiable selon la projection actuelle</span><span><span class="pair-qualification qualification-pending">?</span> Cas à départager</span><span class="muted">Quatre séances ensemble requises ; quotas évolutifs. Projection non officielle.</span><span class="muted">Clique sur une paire pour voir sa fiche.</span></div><div class="table-zone"><div class="table-wrap"><table id="rankingTable" class="cdp-table"><thead><tr><th id="th-rank" scope="col"><button id="sort-rank" class="sort-head" type="button">Rang général <span id="arrow-rank"></span><span class="date-caption">Cat. / Centre</span></button></th><th id="th-name" scope="col"><button id="sort-name" class="sort-head" type="button">Paire <span id="arrow-name"></span></button></th><th id="th-center" scope="col"><button id="sort-center" class="sort-head" type="button">Centre <span id="arrow-center"></span></button></th><th id="th-finale" scope="col"><button id="sort-finale" class="sort-head" type="button">Finale <span id="arrow-finale"></span></button></th><th id="th-count" scope="col"><button id="sort-count" class="sort-head" type="button">Jouées <span id="arrow-count"></span></button></th><th id="th-average" scope="col"><button id="sort-average" class="sort-head" type="button">Moyenne <span id="arrow-average"></span></button></th><th id="th-qualification" scope="col"><button id="sort-qualification" class="sort-head" type="button">Qualification <span id="arrow-qualification"></span></button></th><th id="th-s1" scope="col"><button id="sort-s1" class="sort-head" type="button">S1 <span id="arrow-s1"></span><span class="date-caption">25/11</span></button></th><th id="th-s2" scope="col"><button id="sort-s2" class="sort-head" type="button">S2 <span id="arrow-s2"></span><span class="date-caption">27/01</span></button></th><th id="th-s3" scope="col"><button id="sort-s3" class="sort-head" type="button">S3 <span id="arrow-s3"></span><span class="date-caption">24/02</span></button></th><th id="th-s4" scope="col"><button id="sort-s4" class="sort-head" type="button">S4 <span id="arrow-s4"></span><span class="date-caption">24/03</span></button></th><th id="th-s5" scope="col"><button id="sort-s5" class="sort-head" type="button">S5 <span id="arrow-s5"></span><span class="date-caption">14/04</span></button></th><th id="th-s6" scope="col"><button id="sort-s6" class="sort-head" type="button">S6 <span id="arrow-s6"></span><span class="date-caption">05/05</span></button></th></tr></thead><tbody id="ranking"></tbody></table></div><div class="empty-state" id="empty"><strong>Aucun résultat à afficher</strong><span id="emptyHint">Connecte-toi à la FFB pour récupérer les résultats.</span></div><div class="table-foot"><span>Les scores retenus sont en vert menthe.</span><span id="buildVersion" title="Version de l’interface">Version 27.11 · configuration FFB locale</span><span class="category-legend"><span><i class="cat-swatch cat1"></i>Cat. 1 · 2C ou +</span><span><i class="cat-swatch cat2"></i>Cat. 2</span><span><i class="cat-swatch cat-unknown"></i>Catégorie inconnue</span></span></div></div>
 </section>
-<section id="sportPanel" hidden class="panel sport-panel"><div class="panel-head"><div><h2>Tableau de bord de la saison</h2><p class="panel-subtitle">Participation et projections sur les séances validées</p></div></div><div class="panel-inner"><div id="seasonStats" class="season-stats"></div><div id="seasonDates" class="season-dates"></div><div class="sport-actions"><label>Statistiques par centre<select id="statsCenter"><option value="">Choisir un centre</option></select></label><button id="centerStatsOpen" type="button" class="secondary">Voir le centre</button><label>Performances par séance<select id="performanceSession"><option value="">Choisir une séance</option></select></label><button id="performanceOpen" type="button" class="secondary">Voir les performances</button></div><details><summary>Fréquentation des centres et quotas</summary><div id="centerOverview" class="sport-table-wrap"></div></details></div></section><section id="quotaPanel" class="panel" hidden><div class="panel-inner"><div id="projectionControls" class="projection-controls"><label>Finale<select id="projectionFinal"><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Recherche<input id="projectionSearch" type="search" placeholder="Rechercher un joueur"></label></div><div id="projectionTable"></div></div><div id="quotaLegacy" class="panel-inner quota-area" hidden><div id="quotas"></div></div></section><section id="racePanel" class="panel" hidden><div class="panel-head"><div><h2>Outils sportifs</h2><p id="raceStatus" class="panel-subtitle" role="status"></p></div></div><div class="panel-inner tool-groups"><section class="tool-group"><h3>Joueurs et performances</h3><p class="muted">Parcours individuels, partenaires et records.</p><div class="race-actions"><button id="racePlayers" class="secondary" type="button">Parcours des joueurs</button><button id="racePartners" class="secondary" type="button">Changements de partenaires</button><button id="raceSide" class="secondary" type="button">Classements et records</button></div></section><section class="tool-group"><h3>Centres et qualifications</h3><p class="muted">Comparer les clubs, tester des scénarios et préparer les finales.</p><div class="race-actions"><button id="raceCenters" class="secondary" type="button">Comparer les centres</button><button id="raceSimulation" class="secondary" type="button">Simulateur global</button><button id="raceFinal" class="secondary" type="button">Préparer les finales</button></div></section><section class="tool-group"><h3>Communication</h3><p class="muted">Un bilan sportif prêt à partager après chaque séance.</p><div class="race-actions"><button id="raceBulletin" class="secondary" type="button">Bulletin sportif</button></div></section></div></section><section id="syncPanel" class="panel" hidden><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div><span id="auth" class="status-pill">Non connecté</span></div><div class="panel-inner">
-<div class="actions"><button id="openLogin" class="primary">Connexion FFB</button><button class="secondary" id="disconnect">Déconnexion</button></div>
-<dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Clé API Firebase FFB<input id="ffbClientKey" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Configuration FFB à renseigner une seule fois sur ce navigateur. Ce n’est ni le token GitHub ni le mot de passe FFB.</p><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog>
-<p id="message" class="notice" role="status"></p><button id="cancelSync" class="secondary" disabled>Arrêter</button><div hidden><h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button id="findCenters" class="secondary">Identifier les centres de jeu</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div>
+<section id="sportPanel" hidden class="panel sport-panel"><div class="panel-head"><div><h2>Tableau de bord de la saison</h2><p class="panel-subtitle">Participation et projections sur les séances validées</p></div></div><div class="panel-inner"><div id="seasonStats" class="season-stats"></div><div id="seasonDates" class="season-dates"></div><div class="sport-actions"><label>Statistiques par centre<select id="statsCenter"><option value="">Choisir un centre</option></select></label><button id="centerStatsOpen" type="button" class="secondary">Voir le centre</button><label>Performances par séance<select id="performanceSession"><option value="">Choisir une séance</option></select></label><button id="performanceOpen" type="button" class="secondary">Voir les performances</button></div><details><summary>Fréquentation des centres et quotas</summary><div id="centerOverview" class="sport-table-wrap"></div></details></div></section><section id="quotaPanel" class="panel" hidden><div class="panel-inner"><div id="projectionControls" class="projection-controls"><label>Finale<select id="projectionFinal"><option value="1">Finale 1</option><option value="2">Finale 2</option></select></label><label>Recherche<input id="projectionSearch" type="search" placeholder="Rechercher un joueur"></label></div><div id="projectionTable"></div></div></section><section id="projectionPanel" class="panel" hidden><div id="quotaLegacy" class="panel-inner quota-area"><div id="quotas"></div></div></section><section id="racePanel" class="panel" hidden><div class="panel-head"><div><h2>Outils sportifs</h2><p id="raceStatus" class="panel-subtitle" role="status"></p></div></div><div class="panel-inner tool-groups"><section class="tool-group"><h3>Joueurs et performances</h3><p class="muted">Parcours individuels, partenaires et records.</p><div class="race-actions"><button id="racePlayers" class="secondary" type="button">Parcours des joueurs</button><button id="racePartners" class="secondary" type="button">Changements de partenaires</button><button id="raceSide" class="secondary" type="button">Classements et records</button></div></section><section class="tool-group"><h3>Centres et qualifications</h3><p class="muted">Comparer les clubs, tester des scénarios et préparer les finales.</p><div class="race-actions"><button id="raceCenters" class="secondary" type="button">Comparer les centres</button><button id="raceSimulation" class="secondary" type="button">Simulateur global</button><button id="raceFinal" class="secondary" type="button">Préparer les finales</button></div></section><section class="tool-group"><h3>Communication</h3><p class="muted">Un bilan sportif prêt à partager après chaque séance.</p><div class="race-actions"><button id="raceBulletin" class="secondary" type="button">Bulletin sportif</button></div></section></div></section><section id="syncPanel" class="panel" hidden><div class="panel-head sync-head"><div><h2>Synchronisation FFB</h2><p class="panel-subtitle">Simultané du Comité de Provence</p></div></div><div class="panel-inner">
+
+
+<p id="message" class="notice" role="status"></p><div hidden><h3>Résultats des séances</h3><div class="fields"><label>Séance<select id="session"><option value="1">S1 · 25/11/2026</option><option value="2">S2 · 27/01/2027</option><option value="3">S3 · 24/02/2027</option><option value="4">S4 · 24/03/2027</option><option value="5">S5 · 14/04/2027</option><option value="6">S6 · 05/05/2027</option></select></label><label>ID séance FFB<input id="sessionId" type="number" value="364548" min="1"></label></div><div class="actions"><button id="syncAll" class="primary">Actualiser toutes les séances FFB</button><button id="query" class="secondary">Actualiser la séance choisie</button><button id="findCenters" class="secondary">Identifier les centres de jeu</button><button class="secondary" id="sessions">Liste des séances</button><button id="exportRaw" class="secondary">Exporter la réponse JSON</button></div>
 <details class="advanced"><summary>Outils avancés · diagnostic des queries</summary><div class="fields"><label>Route<select id="route"><option value="results">api/results/sessions</option><option value="competitions">api/competitions/sessions</option></select></label><label>Page<input type="number" id="page" value="1" min="1"></label><label>Taille de page<input type="number" id="pageSize" value="80" min="1" max="200"></label></div><label>Réponse JSON<textarea id="raw" spellcheck="false" placeholder="Réponse JSON"></textarea></label><div class="actions"><button class="secondary" id="inspect">Analyser le JSON</button><button class="secondary" id="schemaExport">Exporter le schéma (sans données personnelles)</button><span id="arrays" class="muted"></span></div><p id="schemaStatus" class="muted" role="status"></p>
 <h3>Normalisation de la séance</h3><div class="fields"><label>Chemin du tableau de paires<input id="listPath" placeholder="items (vide = tableau racine)"></label><label>Chemin du total<input id="totalPath" placeholder="total"></label></div><label>Mapping JSON<textarea id="mapping" spellcheck="false"></textarea></label><div class="actions"><button id="preview">Tester le mapping</button><button class="primary" id="importAll">Récupérer toutes les pages et importer</button></div><pre id="previewOutput">Aucun aperçu.</pre><p class="muted">L'import complet exige la validation du schéma et du total FFB. Les données existantes sont conservées en cas d'erreur.</p></details></div>
 </div></section>
 <section id="storagePanel" class="panel" hidden><div class="panel-head"><div><h2>Sauvegarde</h2><p class="panel-subtitle">Sauvegarde automatique après chaque collecte FFB</p></div></div><div class="panel-inner"><p id="savedInfo" class="muted" role="status">Aucune collecte sauvegardée.</p><div class="fields"><label>Données sauvegardées<select id="savedView" class="input"><option value="">Classement validé</option></select></label></div><div class="actions"><button id="save" class="secondary">Exporter toutes les données</button><button id="publishExport" class="secondary">Préparer le classement public</button><button id="publishDirect" class="primary" type="button">Publier le classement</button><label>Restaurer un fichier JSON <input id="restore" type="file" accept=".json,application/json"></label></div></div></section>
-</main><dialog id="raceDialog" aria-labelledby="raceTitle"><div class="modal-head"><h2 id="raceTitle"></h2><button id="raceClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="raceDetails" class="pair-details"></div></dialog><dialog id="sportDialog" aria-labelledby="sportTitle"><div class="modal-head"><h2 id="sportTitle"></h2><button id="sportClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="sportDetails" class="pair-details"></div></dialog><dialog id="pairDialog" aria-labelledby="pairTitle"><div class="modal-head"><h2 id="pairTitle">Fiche de la paire</h2><button id="pairClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="pairDetails" class="pair-details"></div></dialog><dialog id="manageDialog"><div class="modal-head"><h2>Activer la gestion</h2><button id="manageCancel" class="modal-close" type="button" aria-label="Fermer">×</button></div><form id="manageForm" class="ffb-login-form"><label>Token GitHub<input id="githubToken" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Token limité au dépôt CapGui13/CDP, permission Contents : lecture et écriture. Le token est conservé dans ce navigateur pour retrouver ton accès. Ne l’enregistre que sur un appareil de confiance.</p><div class="actions"><button id="manageForget" class="secondary" type="button">Oublier le token</button><button id="manageSubmit" class="primary" type="submit">Activer</button></div></form><p id="manageStatus" class="muted" role="status"></p></dialog>
+</main><dialog id="loginDialog"><div class="modal-head"><h2>Connexion FFB</h2><button class="modal-close" id="closeLogin" aria-label="Fermer">×</button></div><form class="ffb-login-form" id="loginForm"><label>Clé API Firebase FFB<input id="ffbClientKey" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Configuration FFB à renseigner une seule fois sur ce navigateur. Ce n’est ni le token GitHub ni le mot de passe FFB.</p><label>Adresse e-mail FFB<input type="email" id="email" autocomplete="username" required></label><label>Mot de passe<input type="password" id="password" autocomplete="current-password" required></label><div class="actions"><button class="primary" id="connect" type="submit">Se connecter</button></div></form><p id="loginStatus" class="muted" role="status"></p></dialog><dialog id="raceDialog" aria-labelledby="raceTitle"><div class="modal-head"><h2 id="raceTitle"></h2><button id="raceClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="raceDetails" class="pair-details"></div></dialog><dialog id="sportDialog" aria-labelledby="sportTitle"><div class="modal-head"><h2 id="sportTitle"></h2><button id="sportClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="sportDetails" class="pair-details"></div></dialog><dialog id="pairDialog" aria-labelledby="pairTitle"><div class="modal-head"><h2 id="pairTitle">Fiche de la paire</h2><button id="pairClose" class="modal-close" type="button" aria-label="Fermer">×</button></div><div id="pairDetails" class="pair-details"></div></dialog><dialog id="manageDialog"><div class="modal-head"><h2>Activer la gestion</h2><button id="manageCancel" class="modal-close" type="button" aria-label="Fermer">×</button></div><form id="manageForm" class="ffb-login-form"><label>Token GitHub<input id="githubToken" type="password" autocomplete="off" spellcheck="false" required></label><p class="muted">Token limité au dépôt CapGui13/CDP, permission Contents : lecture et écriture. Le token est conservé dans ce navigateur pour retrouver ton accès. Ne l’enregistre que sur un appareil de confiance.</p><div class="actions"><button id="manageForget" class="secondary" type="button">Oublier le token</button><button id="manageSubmit" class="primary" type="submit">Activer</button></div></form><p id="manageStatus" class="muted" role="status"></p></dialog>
 <script type="module">
 import {createRaceUI} from "./src/race-ui.mjs?v=season-audit1";
 import {matchesSearch} from "./src/race-tools.mjs?v=season-audit1";
@@ -415,12 +423,13 @@ function saveLocal(key,value){try{if(value)localStorage.setItem(key,value);else 
 function forgetFfbSession(){saveLocal(ffbSessionKey,"");}
 async function restoreFfb(){const key=readFfbConfig(),refresh=readLocal(ffbSessionKey);if(!key||!refresh)return; $("auth").textContent="Reconnexion…";try{api=await makeFfbClient({firebaseApiKey:key,savedRefreshToken:refresh,onSession:t=>saveLocal(ffbSessionKey,t)});$("auth").textContent="Connecté";message("Connexion FFB restaurée.");}catch(e){api=null;$("auth").textContent="Non connecté";if(["INVALID_REFRESH_TOKEN","TOKEN_EXPIRED","USER_DISABLED","USER_NOT_FOUND","INVALID_GRANT"].includes(e.code))forgetFfbSession();message("Reconnexion FFB impossible : "+(e.message||"Erreur"),true);}}
 function readFfbConfig(){try{return localStorage.getItem(ffbConfigKey)||"";}catch{return "";}}
-let publisher=null,publicError="",publishedCache=null,publicLoad=0,unlocking=false;
+let publisher=null,warmPublisher=null,publicError="",publishedCache=null,publicLoad=0,unlocking=false;
 const adminTokenKey="cdp-admin-token-v1";
 let savedAdminToken="";
 try{savedAdminToken=localStorage.getItem(adminTokenKey)||"";}catch{}
 let adminVerified=false;
 function rememberAdminToken(token){
+ if(warmPublisher&&token!==savedAdminToken){warmPublisher.close();warmPublisher=null;}
  savedAdminToken=token;adminVerified=!!token;
  try{if(token)localStorage.setItem(adminTokenKey,token);else localStorage.removeItem(adminTokenKey);}catch{}
 }
@@ -430,7 +439,9 @@ function updateAdminButtons(){
  $("quickUpdate").hidden=!publisher;
  if(!publisher)$("quickUpdateStatus").hidden=true;
  $("manageForget").hidden=!savedAdminToken;
+ $("ffbControls").hidden=!publisher;if(!publisher)$("ffbNotice").hidden=true;updateFfbButtons();
 }
+function updateFfbButtons(){$("openLogin").hidden=!!api;$("disconnect").hidden=!api;}
 function showTokenDialog(){
  if(unlocking||busy)return;
  $("manageStatus").textContent="";$("githubToken").value="";updateAdminButtons();$("manageDialog").showModal();
@@ -466,7 +477,7 @@ let quickUpdateActive=false;
 function updateQuickSteps(done,total){const bar=$("quickUpdateProgress");bar.max=total;bar.value=done;$("quickUpdateCount").textContent=done+" / "+total+" étapes terminées";}
 function beginQuickUpdate(){quickUpdateActive=true;const panel=$("quickUpdateStatus");panel.hidden=false;panel.dataset.state="running";$("quickUpdateTitle").textContent="Mise à jour en cours…";$("quickUpdateDetail").textContent="Préparation…";$("quickUpdate").textContent="MAJ…";updateQuickSteps(0,1);}
 function finishQuickUpdate(ok,detail){quickUpdateActive=false;$("quickUpdate").textContent="MAJ";$("quickUpdateStatus").dataset.state=ok?"success":"error";$("quickUpdateTitle").textContent=ok?"Mise à jour terminée":"Mise à jour non terminée";$("quickUpdateDetail").textContent=detail;}
-function message(text,error=false){$("message").textContent=text;$("message").className=error?"notice error":"notice";if(quickUpdateActive)$("quickUpdateDetail").textContent=text;}
+function message(text,error=false){$("message").textContent=text;$("message").className=error?"notice error":"notice";if(quickUpdateActive)$("quickUpdateDetail").textContent=text;else if(publisher){$("ffbNotice").hidden=!error;$("ffbNotice").textContent=error?text:"";}updateFfbButtons();}
 function config(){
  const session=Number($("session").value),id=Number($("sessionId").value),page=Number($("page").value),size=Number($("pageSize").value);
  if(!Number.isSafeInteger(id)||id<1||!Number.isInteger(page)||page<1||!Number.isInteger(size)||size<1||size>200)throw Error("Paramètres de query invalides");
@@ -475,7 +486,7 @@ function config(){
 function requireApi(){if(!publisher)throw Error("Active d’abord la gestion.");if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
 function startLocal(){if(!publisher)throw Error("Gestion non activée.");if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
 let operation=null;
-function run(fn,{network=false,timeout=120000,quick=false}={}){return async()=>{if(busy||unlocking||!publisher)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),timeout);}$("quickUpdate").disabled=true;$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{if(quick)beginQuickUpdate();message("Requête en cours…");await fn();}catch(e){const detail=operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de temps). Données déjà collectées conservées.":e.message||"Erreur";message(detail,true);if(quick)finishQuickUpdate(false,detail);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("quickUpdate").disabled=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
+function run(fn,{network=false,timeout=120000,quick=false}={}){return async()=>{if(busy||unlocking||!publisher)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),timeout);}$("quickUpdate").disabled=true;$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{if(quick){beginQuickUpdate();$("ffbNotice").hidden=true;}message("Requête en cours…");await fn();}catch(e){const detail=operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de temps). Données déjà collectées conservées.":e.message||"Erreur";message(detail,true);if(quick)finishQuickUpdate(false,detail);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;if(quick)showPublic(publishedCache);$("quickUpdate").disabled=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=rawPayload();const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload,kind="liste"){$("raw").value=JSON.stringify(payload,null,2);rawKind=kind;inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
@@ -485,7 +496,7 @@ function saveSnapshot(next,preview=null){
  const parsed=readSnapshot(next),checked=validate(parsed);
  try{localStorage.setItem(storage,JSON.stringify(parsed));}
  catch(e){throw Error("Sauvegarde locale impossible : espace insuffisant ou stockage bloqué. Les anciennes données sont conservées.");}
- publicMode=false;state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;aggregatePreview=Object.keys(state.previews).length>0;render();
+ publicMode=false;state=parsed;result=checked;pendingPreview=preview?state.previews[preview.session]||null:null;aggregatePreview=Object.keys(state.previews).length>0;if(!quickUpdateActive)render();
 }
 function commit(next){saveSnapshot(withValidated(state,next));}
 function storePreview(preview){const update=withPreview(state,preview);saveSnapshot(update.snapshot,preview);return update.kept;}
@@ -605,32 +616,29 @@ function changeSort(key){
  else{sortKey=key;sortDirection=["average","count","delta","s1","s2","s3","s4","s5","s6"].includes(key)?"desc":"asc";}
  $("sortKey").value=sortKey;$("sortDirection").value=sortDirection;render();
 }
-const publicSections={ranking:["navRanking","rankingPanel"],season:["navSeason","sportPanel"],quotas:["navQuotas","quotaPanel"],tools:["navTools","racePanel"]};
+const publicSections={ranking:["navRanking","rankingPanel"],season:["navSeason","sportPanel"],quotas:["navQuotas","quotaPanel"],projection:["navProjection","projectionPanel"],tools:["navTools","racePanel"]};
 let activeSection="ranking",publicNavigationAvailable=false;
 function applyPublicNavigation(){
- const isPublic=!publisher;
- $("publicNav").hidden=!isPublic;
- $("publicFeedback").hidden=!isPublic;
+ $("publicNav").hidden=false;$("publicFeedback").hidden=false;
  $("rankingPublicActions").hidden=!publicNavigationAvailable;
- $("publicSessionLabel").hidden=!isPublic;$("legacyViewLabel").hidden=isPublic;$("advancedFilters").hidden=isPublic;$("quotaLegacy").hidden=isPublic;$("projectionControls").hidden=!isPublic;$("projectionTable").hidden=!isPublic;$("historySummary").hidden=isPublic;
+ $("publicSessionLabel").hidden=false;$("legacyViewLabel").hidden=true;$("advancedFilters").hidden=true;$("quotaLegacy").hidden=false;$("projectionControls").hidden=false;$("projectionTable").hidden=false;$("historySummary").hidden=true;
  $("themeSwitch").hidden=true;$("installApp").hidden=true;
  if(!publicNavigationAvailable)activeSection="ranking";
  for(const [section,[button,panel]] of Object.entries(publicSections)){
   const active=section===activeSection;
   $(button).setAttribute?.("aria-pressed",String(active));$(button).className=active?"nav-selected":"";
-  $(button).disabled=!publicNavigationAvailable&&section!=="ranking";
-  $(panel).hidden=isPublic?!active:section!=="ranking"&&section!=="quotas";
+  $(button).disabled=!publicNavigationAvailable&&section!=="ranking";$(panel).hidden=!active;
  }
 }
 function selectPublicSection(section){
- if(!publicNavigationAvailable||!["ranking","quotas"].includes(section))return;
- activeSection=section;applyPublicNavigation();
- $("exportMenu").open=false;
+ if(!publicNavigationAvailable||!["ranking","quotas","projection"].includes(section))return;
+ activeSection=section;applyPublicNavigation();$("exportMenu").open=false;
 }
 for(const [section,[button]] of Object.entries(publicSections))$(button).onclick=()=>selectPublicSection(section);
 function render(){
- const publicView=!publisher;document.body.classList.add("public-clean");
- $("syncPanel").hidden=publicView;$("storagePanel").hidden=true;updateAdminButtons();
+ if(quickUpdateActive)return;
+ const publicView=true;document.body.classList.add("public-clean");
+ $("syncPanel").hidden=true;$("storagePanel").hidden=true;updateAdminButtons();
  $("publicNotice").hidden=!publicView;$("publicNotice").textContent=publicView?(publicError|| (state.savedAt?"MAJ : "+new Date(state.savedAt).toLocaleString("fr-FR"):"Chargement du classement public…")):"";
  $("search").placeholder=publicView?"Rechercher un joueur":"Rechercher un joueur ou un n° FFB";
  $("emptyHint").textContent=publicView?"Aucun résultat publié pour le moment.":"Connecte-toi à la FFB pour récupérer les résultats.";
@@ -660,7 +668,7 @@ function render(){
  $("rankingTable").className+=(publicView?" public-simple":"")+(publicView&&sessionNumber?" session-view":"");
  $("sort-rank").childNodes?.[0]&&( $("sort-rank").childNodes[0].textContent=sessionNumber?"Rang ":"Rang général ");
  $("sort-average").childNodes?.[0]&&( $("sort-average").childNodes[0].textContent=sessionNumber?"Score ":"Moyenne ");
- renderProjection();
+ renderProjection();renderQuotaDetails();
  const advancedActive=qualification!=="all"||sortKey!=="rank"||sortDirection!=="asc";
  $("advancedFilters").className="ranking-advanced"+(advancedActive?" filters-active":"");
  $("filteredCount").textContent=working?"Aperçu de travail · qualification et tris suspendus":rows.length+" / "+result.ranking.length+" paires affichées";
@@ -694,6 +702,9 @@ function render(){
  for(const p of rows){
  const tr=document.createElement("tr");tr.className="player-row category-"+p.finale+" q-"+p.status;const rankCell=document.createElement("td"),rankSpan=document.createElement("span");rankSpan.className="rank";rankSpan.textContent=p.rank;rankCell.append(rankSpan);const d=detailMap.get(p.key);const sub=document.createElement("span");sub.className="subrank";sub.textContent="Cat. "+d.categoryRank+" · C. "+(d.centerRank??"—");sub.title="Rang dans la catégorie / rang dans le centre au sein de la catégorie";rankCell.append(sub);const h=history.byKey.get(p.key);if(history.hasPrevious&&h){const trend=document.createElement("span");trend.className="rank-trend "+(h.delta>0?"trend-up":h.delta<0?"trend-down":"muted");trend.textContent=h.event==="new"?"Nouv.":h.delta>0?"▲ "+h.delta:h.delta<0?"▼ "+Math.abs(h.delta):"—";trend.title="Évolution du rang général depuis S"+history.previousSession;rankCell.append(trend);}tr.append(rankCell);pairCell(tr,p);td(tr,p.center||"À déterminer");td(tr,p.finale);td(tr,p.count+"/6","num");td(tr,p.average.toFixed(2).replace(".",",")+" %","point numeric");qualificationCell(tr,p);if(h&&["in","out"].includes(h.event)){const event=document.createElement("span");event.className="qualification-event "+(h.event==="in"?"trend-up":"trend-down");event.textContent=h.event==="in"?"Entrée":"Sortie";tr.children[6].append(event);}for(let n=1;n<=6;n++){const score=p.results.find(x=>x.session===n);td(tr,score?score.score.toFixed(2).replace(".",",")+" %":"—",score&&p.retained.includes(n)?"score-best numeric":"score-other numeric");}$("ranking").append(tr);
  }
+}
+function renderQuotaDetails(){
+ if(quotaComparisonResult===result)return;
  $("quotas").replaceChildren();
  if(!result.completedSessions.length){$("quotas").textContent="Aucune séance validée : pas encore de projection de quotas.";return;}
  if(quotaComparisonResult!==result){quotaComparisonCache=compareQuotaStages(state.rows,result);quotaComparisonResult=result;}
@@ -714,11 +725,12 @@ function render(){
   $("quotas").append(allocation);
   const wrap=document.createElement("div");wrap.className="quota-scroll";
   const table=document.createElement("table");table.className="quota-table";
-  const head=document.createElement("tr");for(const label of ["Centre","Participations cat. cumulées","Tables moy. toutes cat.","Quota local prévisionnel","Quota précédent","Évolution","Places locales vacantes (min.)","Rattachement à confirmer"]){const th=document.createElement("th");th.textContent=label;head.append(th);}table.append(head);
+  const head=document.createElement("tr");for(const label of ["Centre","Participations cat. cumulées","Tables moy. toutes cat.","Quota local prévisionnel","Paires projetées (locales + directes)","Quota précédent","Évolution","Places locales vacantes (min.)","Rattachement à confirmer"]){const th=document.createElement("th");th.textContent=label;head.append(th);}table.append(head);
   for(const q of f.quotas){
    const tr=document.createElement("tr");td(tr,q.center);td(tr,q.weight);
    td(tr,q.averageTables==null?"—":q.averageTables.toLocaleString("fr-FR",{maximumFractionDigits:2}),q.minimumTablesReached?"":"warning");
    td(tr,range(q.quotaMin,q.quotaMax),q.quotaUncertain?"warning":"");
+   const directCount=f.direct.filter(key=>result.ranking.find(p=>p.key===key)?.center===q.center).length;td(tr,(q.local?.length??0)+directCount);
    td(tr,range(q.priorMin,q.priorMax));
    const delta=q.delta;
    td(tr,q.newCenter?"Nouveau":delta?(delta.min===delta.max?signed(delta.min):signed(delta.min)+" à "+signed(delta.max)):"—",delta?(delta.min>0?"quota-up":delta.max<0?"quota-down":delta.min!==delta.max?"warning":""):"");
@@ -729,6 +741,7 @@ function render(){
  for(const w of result.warnings){const d=document.createElement("p");d.className="warning";d.textContent=w;$("quotas").append(d);}
 }
 function renderProjection(){
+ if(quickUpdateActive)return;
  const root=$("projectionTable");root.replaceChildren();
  const finale=Number($("projectionFinal").value||1),query=$("projectionSearch").value||"";
  const all=result.ranking.filter(p=>p.finale===finale),selected=all.filter(projected),uncertain=all.filter(uncertainQualification);
@@ -787,6 +800,11 @@ $("findCenters").onclick=run(async()=>{await syncOne(config(),requireApi(),{cent
 $("query").onclick=run(async()=>{const client=requireApi();await syncOne(config(),client);},{network:true});
 $("quickUpdate").onclick=run(async()=>{
  const client=requireApi();
+ message("Vérification GitHub…");const fresh=await connectPublisher(savedAdminToken);
+ publisher.close();publisher=fresh;
+ if(operation.signal.aborted)throw Error("Collecte interrompue.");
+ const cached=localStorage.getItem(storage),privateState=cached?readSnapshot(JSON.parse(cached)):emptyState();
+ state=privateState;result=validate(privateState);publicMode=false;pendingPreview=null;aggregatePreview=Object.keys(state.previews).length>0;
  const dates=["2026-11-25","2027-01-27","2027-02-24","2027-03-24","2027-04-14","2027-05-05"];
  const today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Paris"}).format(new Date());
  const expected=dates.map((date,i)=>({date,session:i+1})).filter(x=>x.date<=today);
@@ -802,9 +820,9 @@ $("quickUpdate").onclick=run(async()=>{
  if(operation.signal.aborted||failures.length)throw Error("Publication inchangée. "+failures.join(" ; "));
  if(expected.some(x=>!state.completedSessions.includes(x.session)))throw Error("Séance manquante : publication inchangée.");
  const snapshot=publicationCandidate();
- message("Publication GitHub en cours…");
+ message("Publication GitHub en cours…");$("cancelSync").disabled=true;
  const receipt=await publisher.publish(snapshot);
- publishedCache=readPublicSnapshot(snapshot);
+ publishedCache=readPublicSnapshot(snapshot);publicError="";
  const detail="MAJ publiée · "+expected.length+" séance(s) · "+snapshot.rows.length+" résultats · commit "+receipt.commit.slice(0,8)+". Le site public peut nécessiter un court délai de déploiement.";message(detail);updateQuickSteps(totalSteps,totalSteps);finishQuickUpdate(true,detail);
 },{network:true,timeout:600000,quick:true});
 $("syncAll").onclick=run(async()=>{
@@ -874,16 +892,14 @@ async function activateAdmin(token,{persist=false}={}){
  $("manageStatus").textContent="Vérification des droits GitHub…";
  let candidate=null;
  try{
-  candidate=await connectPublisher(token);
-  const cached=localStorage.getItem(storage),privateState=cached?readSnapshot(JSON.parse(cached)):emptyState();
-  const checked=validate(privateState);
+  if(!persist&&warmPublisher&&token===savedAdminToken){candidate=warmPublisher;warmPublisher=null;}else{candidate=await connectPublisher(token);if(warmPublisher){warmPublisher.close();warmPublisher=null;}}
   if(persist)rememberAdminToken(token);else adminVerified=true;
-  publisher=candidate;++publicLoad;state=privateState;result=checked;publicMode=false;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);
-  $("manageDialog").close();render();
-  message(state.rows.length?"Gestion activée. Sauvegarde privée restaurée.":"Gestion activée. Aucune sauvegarde privée : restaure ton export ou actualise toutes les séances FFB avant de publier.");
-  $("quickUpdate").disabled=true;try{await restoreFfb();}finally{$("quickUpdate").disabled=false;}
+  publisher=candidate;++publicLoad;
+  $("manageDialog").close();updateAdminButtons();
+  message("Gestion activée.");
+  if(!api){$("quickUpdate").disabled=true;try{await restoreFfb();}finally{$("quickUpdate").disabled=false;}}
  }catch(e){
-  candidate?.close();if([401,403,404].includes(e.status)){rememberAdminToken("");}
+  candidate?.close();if(publisher===candidate)publisher=null;if([401,403,404].includes(e.status)){rememberAdminToken("");}
   $("manageStatus").textContent=e.message||"Impossible de vérifier le token.";updateAdminButtons();
   if(!$("manageDialog").open)$("manageDialog").showModal();
  }finally{$("githubToken").value="";$("manageSubmit").disabled=false;unlocking=false;}
@@ -892,12 +908,13 @@ $("manageOpen").onclick=()=>activateAdmin(savedAdminToken);
 $("manageCancel").onclick=()=>{if(unlocking)return;$("githubToken").value="";$("manageDialog").close();};
 $("manageDialog").addEventListener("close",()=>{$("githubToken").value="";});
 $("manageForm").onsubmit=async e=>{e.preventDefault();await activateAdmin($("githubToken").value.trim(),{persist:true});};
-$("manageForget").onclick=async()=>{if(unlocking||busy)return;rememberAdminToken("");forgetFfbSession();saveLocal(ffbEmailKey,"");try{localStorage.removeItem(ffbConfigKey);}catch{}$("ffbClientKey").value="";$("githubToken").value="";$("manageDialog").close();if(publisher)await $("manageClose").onclick();else updateAdminButtons();};
+$("manageForget").onclick=async()=>{if(unlocking||busy)return;rememberAdminToken("");forgetFfbSession();api=null;$("auth").textContent="Non connecté";saveLocal(ffbEmailKey,"");try{localStorage.removeItem(ffbConfigKey);}catch{}$("ffbClientKey").value="";$("githubToken").value="";$("manageDialog").close();if(publisher)await $("manageClose").onclick();else updateAdminButtons();};
 document.addEventListener?.("keydown",e=>{if(e.ctrlKey&&e.altKey&&e.code==="KeyG"){e.preventDefault();showTokenDialog();}});
 $("manageClose").onclick=async()=>{
  if(!publisher||busy||unlocking)return;
- publisher.close();publisher=null;api=null;$("ffbClientKey").value="";$("auth").textContent="Non connecté";$("password").value="";$("raw").value="";$("previewOutput").textContent="Aucun aperçu."; $("message").textContent="";
- await loadPublic();
+ if(savedAdminToken){warmPublisher?.close();warmPublisher=publisher;}else{publisher.close();api=null;}
+ publisher=null;$("ffbClientKey").value="";$("password").value="";$("raw").value="";$("previewOutput").textContent="Aucun aperçu.";$("message").textContent="";
+ updateAdminButtons();
 };
 updateSchemaStatus();
 sportUI=createSportUI({document,storage:localStorage,getState:()=>({state,result,history,detailMap,publisher}),openPair,render,pairDisplay,statuses});
@@ -905,7 +922,7 @@ raceUI=createRaceUI({document,storage:localStorage,getState:()=>({state,result,h
 async function initializeAdmin(){
  await loadPublic();
  if(!savedAdminToken)return;
- try{const check=await connectPublisher(savedAdminToken);check.close();adminVerified=true;updateAdminButtons();}
+ try{const check=await connectPublisher(savedAdminToken);warmPublisher=check;adminVerified=true;updateAdminButtons();}
  catch(e){if([401,403,404].includes(e.status))rememberAdminToken("");updateAdminButtons();}
 }
 initializeAdmin();
