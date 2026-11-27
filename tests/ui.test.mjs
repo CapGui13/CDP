@@ -212,3 +212,25 @@ test("saison terminée : accès aux finales, confirmations locales et exclusion 
  e.get("raceClose").onclick();e.get("raceSimulation").onclick();
  assert.ok(e.get("raceDetails").children[0].textContent.includes("Aucune séance future"));
 });
+
+test("navigation publique : une rubrique à la fois, filtres conservés et gestion isolée",async()=>{
+ const rows=Array.from({length:3},(_,i)=>({session:1,center:i===2?"B":"A",score:70-i,players:[{license:"a"+i,name:"Fictif A"+i,series:"3P"},{license:"b"+i,name:"Fictif B"+i,series:"3P"}]}));
+ let i=0;const published=publication.publicSnapshot({completedSessions:[1],rows,previews:{},savedAt:"2026-11-26T20:00:00Z"},()=>String(++i));
+ const e=boot(new Map(),null,{published});await new Promise(resolve=>setTimeout(resolve,0));
+ const panels=["rankingPanel","sportPanel","quotaPanel","racePanel"];
+ const check=id=>{for(const panel of panels)assert.equal(e.get(panel).hidden,panel!==id);};
+ check("rankingPanel");assert.equal(e.get("publicNav").hidden,false);
+ e.get("center").value="A";e.get("center").onchange();assert.equal(e.get("ranking").children.length,2);
+ e.get("qualFilter").value="projected";e.get("qualFilter").onchange();
+ assert.ok(e.get("advancedFilters").className.includes("filters-active"));
+ e.get("navSeason").onclick();check("sportPanel");
+ e.get("navQuotas").onclick();check("quotaPanel");assert.ok(e.get("quotas").children.length>0);
+ e.get("navTools").onclick();check("racePanel");
+ e.get("navRanking").onclick();check("rankingPanel");
+ assert.equal(e.get("center").value,"A");assert.equal(e.get("qualFilter").value,"projected");assert.equal(e.get("ranking").children.length,2);
+ e.get("resetFilters").onclick();assert.ok(!e.get("advancedFilters").className.includes("filters-active"));
+ assert.equal(e.get("ranking").children.length,3);
+ e.get("manageOpen").onclick();e.get("githubToken").value="test-token";await e.get("manageForm").onsubmit({preventDefault(){}});
+ assert.equal(e.get("publicNav").hidden,true);assert.equal(e.get("syncPanel").hidden,false);assert.equal(e.get("storagePanel").hidden,false);assert.equal(e.get("rankingPanel").hidden,false);assert.equal(e.get("quotaPanel").hidden,false);assert.equal(e.get("rankingPublicActions").hidden,true);
+ await e.get("manageClose").onclick();check("rankingPanel");assert.equal(e.get("publicNav").hidden,false);
+});
