@@ -25,11 +25,11 @@ class ApiError extends Error {
   }
 }
 
-export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl = fetch, proxy = DEFAULT_PROXY, pause = wait }) {
-  if (!email || !email.includes('@') || !password) throw new Error('Renseigner l’adresse e-mail FFB et le mot de passe');
+export async function makeFfbClient({ email, password, firebaseApiKey, savedRefreshToken = '', onSession = () => {}, fetchImpl = fetch, proxy = DEFAULT_PROXY, pause = wait }) {
+  if (!savedRefreshToken && (!email || !email.includes('@') || !password)) throw new Error('Renseigner l’adresse e-mail FFB et le mot de passe');
   const apiKey = typeof firebaseApiKey === 'string' ? firebaseApiKey.trim() : '';
   if (!apiKey) throw new Error('Renseigner la clé Firebase FFB');
-  let token = '', refreshToken = '', expiry = 0, easi = '', operationSignal=null, refreshing=null;
+  let token = '', refreshToken = savedRefreshToken, expiry = 0, easi = '', operationSignal=null, refreshing=null;
   const checkAbort=()=>{if(operationSignal?.aborted)throw new Error('Synchronisation interrompue.');};
 
   async function request(url, opts = {}, context = 'API') {
@@ -71,7 +71,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
       body: JSON.stringify({ email, password, returnSecureToken: true, clientType: 'CLIENT_TYPE_WEB' })
     }, 'Authentification FFB');
     if (!data?.idToken || !data?.refreshToken) throw new Error('Connexion FFB : jetons manquants');
-    token = data.idToken; refreshToken = data.refreshToken;
+    token = data.idToken; refreshToken = data.refreshToken; onSession(refreshToken);
     expiry = Date.now() + Math.max(60, Number(data.expiresIn) || 3600) * 1000 - 60000;
     easi = '';
   }
@@ -87,7 +87,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString()
     }, 'Renouvellement FFB');
     if (!data?.id_token) throw new Error('Impossible de renouveler la session FFB');
-    token = data.id_token; refreshToken = data.refresh_token || refreshToken;
+    token = data.id_token; refreshToken = data.refresh_token || refreshToken; onSession(refreshToken);
     expiry = Date.now() + Math.max(60, Number(data.expires_in) || 3600) * 1000 - 60000;
     easi = '';
     })();
@@ -143,7 +143,7 @@ export async function makeFfbClient({ email, password, firebaseApiKey, fetchImpl
     return call('www', `api/persons/${pid}/registrations`);
   }
 
-  await signin();
+  if (savedRefreshToken) await ensureToken(); else await signin();
   password='';
   return {
     setOperationSignal: signal=>{operationSignal=signal;},
