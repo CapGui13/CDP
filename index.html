@@ -387,7 +387,7 @@ import {createSportUI} from "./src/sport-ui.mjs?v=season-audit1";
 import {rankingHistory,qualificationFilter,sortRanking,simulatePair} from "./src/ranking-tools.mjs?v=season-audit1";
 import {qualificationDetails,qualificationReason} from "./src/qualification-details.mjs?v=season-audit1";
 import {connectPublisher} from "./src/github-publish.mjs?v=1";
-import {makeFfbClient} from "./src/ffb-browser.mjs?v=audit1";
+import {makeFfbClient} from "./src/ffb-browser.mjs?v=persistent1";
 import {syncSession} from "./src/session-sync.mjs?v=real-s1";
 import {discoverSessions,schemaSummary,listTotal} from "./src/sync.mjs?v=1";
 import {publicSnapshot,readPublicSnapshot} from "./src/publication.mjs?v=audit1";
@@ -399,6 +399,11 @@ import {readSnapshot,withPreview,withValidated,latestPreview} from "./src/persis
 import {at,arrayPaths,collectPages,normalizeRows} from "./src/query-import.mjs";
 const $=id=>document.getElementById(id);
 const ffbConfigKey="cdp-ffb-client-config-v1";
+const ffbSessionKey="cdp-ffb-refresh-v1", ffbEmailKey="cdp-ffb-email-v1";
+function readLocal(key){try{return localStorage.getItem(key)||"";}catch{return "";}}
+function saveLocal(key,value){try{if(value)localStorage.setItem(key,value);else localStorage.removeItem(key);}catch{}}
+function forgetFfbSession(){saveLocal(ffbSessionKey,"");}
+async function restoreFfb(){const key=readFfbConfig(),refresh=readLocal(ffbSessionKey);if(!key||!refresh)return; $("auth").textContent="Reconnexion…";try{api=await makeFfbClient({firebaseApiKey:key,savedRefreshToken:refresh,onSession:t=>saveLocal(ffbSessionKey,t)});$("auth").textContent="Connecté";message("Connexion FFB restaurée.");}catch(e){api=null;$("auth").textContent="Non connecté";if(["INVALID_REFRESH_TOKEN","TOKEN_EXPIRED","USER_DISABLED","USER_NOT_FOUND","INVALID_GRANT"].includes(e.code))forgetFfbSession();message("Reconnexion FFB impossible : "+(e.message||"Erreur"),true);}}
 function readFfbConfig(){try{return localStorage.getItem(ffbConfigKey)||"";}catch{return "";}}
 let publisher=null,publicError="",publishedCache=null,publicLoad=0,unlocking=false;
 const adminTokenKey="cdp-admin-token-v1";
@@ -455,7 +460,7 @@ function config(){
 function requireApi(){if(!publisher)throw Error("Active d’abord la gestion.");if(!api)throw Error("Connecte-toi d'abord à la FFB.");return api;}
 function startLocal(){if(!publisher)throw Error("Gestion non activée.");if(publicMode){state=readSnapshot({completedSessions:[],rows:[]});result=validate(state);pendingPreview=null;aggregatePreview=false;publicMode=false;render();}}
 let operation=null;
-function run(fn,{network=false,timeout=120000}={}){return async()=>{if(busy||!publisher)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),timeout);}$("quickUpdate").disabled=true;$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de temps). Données déjà collectées conservées.":e.message||"Erreur",true);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("quickUpdate").disabled=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
+function run(fn,{network=false,timeout=120000}={}){return async()=>{if(busy||unlocking||!publisher)return;busy=true;let deadline=null;const client=api;if(network){operation=new AbortController();client?.setOperationSignal(operation.signal);$("cancelSync").disabled=false;deadline=setTimeout(()=>operation?.abort(),timeout);}$("quickUpdate").disabled=true;$("query").disabled=true;$("syncAll").disabled=true;$("findCenters").disabled=true;$("sessions").disabled=true;$("importAll").disabled=true;try{message("Requête en cours…");await fn();}catch(e){message(operation?.signal.aborted?"Synchronisation interrompue (arrêt ou limite de temps). Données déjà collectées conservées.":e.message||"Erreur",true);}finally{if(deadline)clearTimeout(deadline);client?.setOperationSignal(null);operation=null;$("cancelSync").disabled=true;busy=false;$("quickUpdate").disabled=false;$("query").disabled=false;$("syncAll").disabled=false;$("findCenters").disabled=false;$("sessions").disabled=false;$("importAll").disabled=false;}};}
 function inspect(){const payload=rawPayload();const paths=arrayPaths(payload);$("arrays").textContent="Tableaux détectés : "+(paths.map(p=>p||"(racine)").join(", ")||"aucun");if(paths.length===1)$("listPath").value=paths[0];return payload;}
 function showRaw(payload,kind="liste"){$("raw").value=JSON.stringify(payload,null,2);rawKind=kind;inspect();}
 function getMapping(){const m=JSON.parse($("mapping").value);for(const field of ["center","score","license1","license2","series1","series2"])if(typeof m[field]!=="string"||!m[field].trim())throw Error("Mapping manquant : "+field);return m;}
@@ -723,11 +728,11 @@ function renderProjection(){
 $("publicSession").onchange=()=>{$("center").value="";sortKey="rank";sortDirection="asc";render();window.scrollTo({top:0,behavior:"instant"});};
 $("projectionFinal").onchange=renderProjection;$("projectionSearch").oninput=renderProjection;
 function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
-$("openLogin").onclick=()=>{if(!publisher)return;$("loginStatus").textContent="";$("ffbClientKey").value=readFfbConfig();$("loginDialog").showModal();};
+$("openLogin").onclick=()=>{if(!publisher)return;$("loginStatus").textContent="";$("ffbClientKey").value=readFfbConfig();$("email").value=readLocal(ffbEmailKey);$("loginDialog").showModal();};
 $("closeLogin").onclick=()=>{if(!busy){$("ffbClientKey").value="";$("loginDialog").close();}};
 $("loginDialog").addEventListener("close",()=>{$("ffbClientKey").value="";});
-$("loginForm").onsubmit=async e=>{e.preventDefault();if(!publisher)return;if(busy)return;busy=true;$("connect").disabled=true;$("loginStatus").textContent="Connexion…";api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:$("ffbClientKey").value.trim()});try{localStorage.setItem(ffbConfigKey,$("ffbClientKey").value.trim());}catch{}$("auth").textContent="Connecté";$("ffbClientKey").value="";$("loginDialog").close();message("Connexion FFB réussie.");}catch(e){$("loginStatus").textContent=e.message||"Échec de connexion";}finally{$("password").value="";$("connect").disabled=false;busy=false;}};
-$("disconnect").onclick=()=>{if(busy)return;api=null;$("auth").textContent="Non connecté";$("password").value="";message("Session locale fermée.");};
+$("loginForm").onsubmit=async e=>{e.preventDefault();if(!publisher)return;if(busy)return;busy=true;$("connect").disabled=true;$("loginStatus").textContent="Connexion…";api=null;$("auth").textContent="Non connecté";try{api=await makeFfbClient({email:$("email").value.trim(),password:$("password").value,firebaseApiKey:$("ffbClientKey").value.trim(),onSession:t=>saveLocal(ffbSessionKey,t)});saveLocal(ffbEmailKey,$("email").value.trim());try{localStorage.setItem(ffbConfigKey,$("ffbClientKey").value.trim());}catch{}$("auth").textContent="Connecté";$("ffbClientKey").value="";$("loginDialog").close();message("Connexion FFB réussie.");}catch(e){$("loginStatus").textContent=e.message||"Échec de connexion";}finally{$("password").value="";$("connect").disabled=false;busy=false;}};
+$("disconnect").onclick=()=>{if(busy||unlocking)return;forgetFfbSession();api=null;$("auth").textContent="Non connecté";$("password").value="";message("Session locale fermée.");};
 $("session").onchange=()=>{$("sessionId").value=discovered.get(Number($("session").value))??"";};
 async function refreshSessions(client){
  const manual=$("sessionId").value,selected=Number($("session").value);
@@ -861,6 +866,7 @@ async function activateAdmin(token,{persist=false}={}){
   publisher=candidate;++publicLoad;state=privateState;result=checked;publicMode=false;aggregatePreview=Object.keys(state.previews).length>0;pendingPreview=state.rows.length?null:latestPreview(state);
   $("manageDialog").close();render();
   message(state.rows.length?"Gestion activée. Sauvegarde privée restaurée.":"Gestion activée. Aucune sauvegarde privée : restaure ton export ou actualise toutes les séances FFB avant de publier.");
+  $("quickUpdate").disabled=true;try{await restoreFfb();}finally{$("quickUpdate").disabled=false;}
  }catch(e){
   candidate?.close();if([401,403,404].includes(e.status)){rememberAdminToken("");}
   $("manageStatus").textContent=e.message||"Impossible de vérifier le token.";updateAdminButtons();
@@ -871,7 +877,7 @@ $("manageOpen").onclick=()=>activateAdmin(savedAdminToken);
 $("manageCancel").onclick=()=>{if(unlocking)return;$("githubToken").value="";$("manageDialog").close();};
 $("manageDialog").addEventListener("close",()=>{$("githubToken").value="";});
 $("manageForm").onsubmit=async e=>{e.preventDefault();await activateAdmin($("githubToken").value.trim(),{persist:true});};
-$("manageForget").onclick=async()=>{if(unlocking||busy)return;rememberAdminToken("");try{localStorage.removeItem(ffbConfigKey);}catch{}$("ffbClientKey").value="";$("githubToken").value="";$("manageDialog").close();if(publisher)await $("manageClose").onclick();else updateAdminButtons();};
+$("manageForget").onclick=async()=>{if(unlocking||busy)return;rememberAdminToken("");forgetFfbSession();saveLocal(ffbEmailKey,"");try{localStorage.removeItem(ffbConfigKey);}catch{}$("ffbClientKey").value="";$("githubToken").value="";$("manageDialog").close();if(publisher)await $("manageClose").onclick();else updateAdminButtons();};
 document.addEventListener?.("keydown",e=>{if(e.ctrlKey&&e.altKey&&e.code==="KeyG"){e.preventDefault();showTokenDialog();}});
 $("manageClose").onclick=async()=>{
  if(!publisher||busy||unlocking)return;
